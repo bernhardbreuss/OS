@@ -6,11 +6,13 @@
  */
 
 #include <inttypes.h>
-#include "kernel/ps/ps.h"
+#include "kernel/process.h"
 #include "config.h"
 
 uint32_t foo(void) {
 	char foo[3]=  "foo";
+
+	return 1;
 }
 
 int main(void) {
