@@ -5,24 +5,14 @@
  *      Author: edi
  */
 
-#include <inttypes.h>
-#include "kernel/process.h"
+#include "kernel/process_manager.h"
 #include "config.h"
+#include "tests/test_runner.h"
 
-uint32_t foo(void) {
-	char foo[3]=  "foo";
-
-	return 1;
-}
+ProcessManager _processManager;
 
 int main(void) {
 
-	Process p1;
-	p1.pid = 1;
-	p1.priority = HIGH;
-	p1.state = READY;
-	p1.func = foo;
-	p1.func();
-
+	tests_run();
 	return 0;
 }

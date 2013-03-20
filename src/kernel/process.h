@@ -8,7 +8,8 @@
 #ifndef PS_H_
 #define PS_H_
 
-typedef uint32_t (*process_func)(void);
+typedef int (*process_func)(void);
+typedef int ProcessId;
 
 enum PROCESS_STATE {
 	READY,
@@ -23,7 +24,7 @@ enum PROCESS_PRIORITY {
 } ;
 
 typedef struct {
-	uint32_t pid;
+	ProcessId pid;
 	process_func func;
 	enum PROCESS_STATE state;
 	enum PROCESS_PRIORITY priority;
