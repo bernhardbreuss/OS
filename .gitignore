@@ -18,3 +18,5 @@
 
 # Eclipse Debug folder
 Debug/*
+
+.settings/org.eclipse.core.resources.prefs

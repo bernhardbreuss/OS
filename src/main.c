@@ -12,15 +12,13 @@
 
 #define TRUE 1
 
-int main(void) {
+void main(void) {
 	
 	tests_run();
 	
 	int doIt = 0;
 	if (doIt == TRUE) {
 		logger_init();
-		logger_debug("This ist a test message");
+		logger_debug("This is a test message");
 	}
-	
-	return 0;
 }
