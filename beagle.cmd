@@ -4,8 +4,11 @@
 // Basic configuration using only external memory
 //
 
+--entry_point _c_int00
+
 -stack           0x00002000
 -heap            0x00002000
+
 
 MEMORY
 {

@@ -4,7 +4,7 @@
  */
 #include <inttypes.h>
 
-asm("\t .bss masterTableAddress, 4");
+/*asm("\t .bss masterTableAddress, 4");
 asm("\t .global masterTableAddress");
 asm("_masterTableAddress .field _masterTableAddress, 32");
 
@@ -44,15 +44,20 @@ void setTranslationTableBase(void) {
 	asm("\t MCR p15, #0, r0, c2, c0, #0");
 }
 
-int main(void) {
+void swi_handler(void) {
+
+}*/
+
+void main(void) {
 
     asm("; Disable Interrupts\n" \
     		"\t MRS   R12, CPSR\n" \
     		"\t BIC   R12, R12, #192\n" \
     		"\t MSR   CPSR_cf, R12");
 
+
+
 	//setTranslationTableBase();
 
-	enableMMU();
-	return 0;
+	//return 0;
 }
