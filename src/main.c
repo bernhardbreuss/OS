@@ -14,11 +14,16 @@
 
 void main(void) {
 	
+	logger_init();
+
 	tests_run();
 	
-	int doIt = 0;
+	int doIt = 1;
 	if (doIt == TRUE) {
-		logger_init();
-		logger_debug("This is a test message");
+//		logger_init();
+		logger_error("This is a test message\n");
+		logger_warn("And another message\n");
+		logger_debug("Hello from BeagleBoard!\n");
+		logger_debug("I'm so happy, now that I can speak to the world! :D\n");
 	}
 }
