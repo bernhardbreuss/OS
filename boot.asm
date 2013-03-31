@@ -9,8 +9,8 @@
 ;* TI includes
 ;***************************************************************
 
-    .global ARGS_MAIN_RTN
     .asg    __args_main,   ARGS_MAIN_RTN
+    .global ARGS_MAIN_RTN
     .import main
     .global __TI_auto_init
 
