@@ -11,52 +11,85 @@
 #include "logger.h"
 #include "../serial_service.h"
 
+#include <stdio.h>
+
 #define FINAL_CHAR '\0'
 
-inline static int logger_concat(const char* c1, const char* c2, char** out);
+#define LOG(type, format) { \
+		va_list arglist; \
+		va_start(arglist, format); \
+		log(type, format, arglist); \
+		va_end(arglist); \
+	}
+
+inline void log(char* type, char* format, va_list arglist);
 
 void logger_init() {
 	serial_service_init();
 }
 
-void logger_debug(char* buffer) {
-	char* type = "DEBUG: ";
-	char* newBuffer;
-	int newBufferLength = logger_concat(type, buffer, &newBuffer);
-
-	serial_service_write(newBuffer, newBufferLength);
-
-	free(newBuffer);
-}
-void logger_warn(char* buffer) {
-	char* type = "WARNING: ";
-	char* newBuffer;
-	int newBufferLength = logger_concat(type, buffer, &newBuffer);
-
-	serial_service_write(newBuffer, newBufferLength);
-
-	free(newBuffer);
-}
-void logger_error(char* buffer) {
-	char* type = "ERROR: ";
-	char* newBuffer;
-	int newBufferLength = logger_concat(type, buffer, &newBuffer);
-
-	serial_service_write(newBuffer, newBufferLength);
-
-	free(newBuffer);
+void logger_debug(char* format, ...) {
+	LOG("DEBUG:\t", format)
 }
 
-inline static int logger_concat(const char* c1, const char* c2, char** cout) {
-	size_t c1Length = strlen(c1);
-	size_t c2Length = strlen(c2);
+void logger_warn(char* format, ...) {
+	LOG("WARN:\t", format)
+}
 
-	free(*cout);
+void logger_error(char* format, ...) {
+	LOG("ERROR:\t", format)
+}
 
-	*cout = (char*) malloc(c1Length + c2Length + 1);
-	memcpy(*cout, c1, c1Length);
-	memcpy(*cout + c1Length, c2, c2Length + 1);
-	int coutLength = strlen(*cout);
+inline void log(char* type, char* format, va_list arglist) {
 
-	return coutLength;
+	static char buffer[1024];
+	#define LOGGER_BUFFER_SIZE sizeof(buffer)
+
+	int l = vsnprintf(buffer, LOGGER_BUFFER_SIZE, format, arglist);
+
+	if (l >= (LOGGER_BUFFER_SIZE - 3)) {
+		l = (LOGGER_BUFFER_SIZE - 3);
+	}
+	buffer[l] = '\r';
+	buffer[l + 1] = '\n';
+	buffer[l + 2] = '\0';
+
+	serial_service_write(type, strlen(type));
+	serial_service_write(buffer, (l + 2));
+}
+
+void logger_logmode(void) {
+	char* mode;
+
+	switch (_get_CPSR() & 0x1F) {
+	case 0x10:
+		mode = "User";
+		break;
+	case 0x11:
+		mode = "FIQ";
+		break;
+	case 0x12:
+		mode = "IRQ";
+		break;
+	case 0x13:
+		mode = "Supervisor";
+		break;
+	case 0x17:
+		mode = "Abort";
+		break;
+	case 0x1B:
+		mode = "Undefined";
+		break;
+	case 0x1F:
+		mode = "System";
+		break;
+	case 0x16:
+		mode = "Secure Monitor";
+		break;
+	default:
+		mode = "Unknown";
+		break;
+	}
+
+	logger_debug("System currently in %s mode", mode);
 }

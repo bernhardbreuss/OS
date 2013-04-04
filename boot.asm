@@ -15,14 +15,35 @@
     .global __TI_auto_init
 
 
+	.global stackIRQ
+	.global stackSupervisor
+	.global stackAbort
+	.global stackSystem
+
+_stackIRQ			.long	stackIRQ
+_stackSupervisor	.long	stackSupervisor
+_stackAbort			.long	stackAbort
+_stackSystem		.long	stackSystem
+
 ;***************************************************************
 ;* FUNCTION DEF: _c_int00
 ;***************************************************************
 
 _c_int00: .asmfunc
 
+	CPS	0x12 ; IRQ
+	LDR	sp, _stackIRQ
+
+	CPS 0x13 ; SWI / Supervisor
+	LDR sp, _stackSupervisor
+
+	CPS 0x17 ; Abort
+	LDR sp, _stackAbort
+
     ; SET System-Mode
-    CPS   0x1F
+    CPS	0x1F
+    LDR	sp, _stackSystem
+
 
     ; Enable Interrupts
     MRS   R12, CPSR
@@ -34,8 +55,6 @@ _c_int00: .asmfunc
     ;  - Perform C auto initialization
     ;  - Call global constructors)
     BL    __TI_auto_init
-
-	;CPS   0x10
 
     ; CALL APPLICATION
     ;BL    ARGS_MAIN_RTN
