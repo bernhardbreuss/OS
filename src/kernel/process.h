@@ -21,7 +21,7 @@ enum PROCESS_PRIORITY {
 	HIGH,
 	MEDIUM,
 	LOW
-} ;
+};
 
 typedef struct {
 	ProcessId pid;

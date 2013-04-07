@@ -38,6 +38,7 @@ SECTIONS
 
    .stackArea > DDR {
        . = align(4);
+       . = . + stackSize;
        stackIRQ = .;
        . = . + stackSize;
        stackSupervisor = .;
@@ -45,6 +46,5 @@ SECTIONS
        stackAbort = .;
        . = . + stackSize;
        stackSystem = .;
-       . = . + stackSize;
    }
 }

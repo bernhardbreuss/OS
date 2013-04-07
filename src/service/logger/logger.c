@@ -40,7 +40,7 @@ void logger_error(char* format, ...) {
 	LOG("ERROR:\t", format)
 }
 
-inline void log(char* type, char* format, va_list arglist) {
+void log(char* type, char* format, va_list arglist) {
 
 	static char buffer[1024];
 	#define LOGGER_BUFFER_SIZE sizeof(buffer)
@@ -59,9 +59,13 @@ inline void log(char* type, char* format, va_list arglist) {
 }
 
 void logger_logmode(void) {
+	logger_debug("System currently in %s mode", logger_getmode(_get_CPSR()));
+}
+
+char* logger_getmode(unsigned int cpsr) {
 	char* mode;
 
-	switch (_get_CPSR() & 0x1F) {
+	switch (cpsr & 0x1F) {
 	case 0x10:
 		mode = "User";
 		break;
@@ -91,5 +95,5 @@ void logger_logmode(void) {
 		break;
 	}
 
-	logger_debug("System currently in %s mode", mode);
+	return mode;
 }

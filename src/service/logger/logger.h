@@ -15,5 +15,6 @@ void logger_debug(char* format, ...);
 void logger_warn(char* format, ...);
 void logger_error(char* format, ...);
 void logger_logmode(void);
+char* logger_getmode(unsigned int cpsr);
 
 #endif /* LOGGER_H_ */

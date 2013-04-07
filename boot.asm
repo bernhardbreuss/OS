@@ -9,9 +9,8 @@
 ;* TI includes
 ;***************************************************************
 
-    .asg    __args_main,   ARGS_MAIN_RTN
+    .asg    _args_main,   ARGS_MAIN_RTN
     .global ARGS_MAIN_RTN
-    .import main
     .global __TI_auto_init
 
 
@@ -28,6 +27,7 @@ _stackSystem		.long	stackSystem
 ;***************************************************************
 ;* FUNCTION DEF: _c_int00
 ;***************************************************************
+	.global call_this_method_form_boot_asm
 
 _c_int00: .asmfunc
 
@@ -57,7 +57,6 @@ _c_int00: .asmfunc
     BL    __TI_auto_init
 
     ; CALL APPLICATION
-    ;BL    ARGS_MAIN_RTN
-    BL    main
+    BL    ARGS_MAIN_RTN
 
 .end
