@@ -11,13 +11,13 @@
 typedef int (*process_func)(void);
 typedef int ProcessId;
 
-enum PROCESS_STATE {
+enum ProcessState {
 	READY,
 	RUNNING,
 	BLOCKED
 };
 
-enum PROCESS_PRIORITY {
+enum ProcessPriority {
 	HIGH,
 	MEDIUM,
 	LOW
@@ -26,8 +26,8 @@ enum PROCESS_PRIORITY {
 typedef struct {
 	ProcessId pid;
 	process_func func;
-	enum PROCESS_STATE state;
-	enum PROCESS_PRIORITY priority;
+	enum ProcessState state;
+	enum ProcessPriority priority;
 } Process;
 
 #endif /* PS_H_ */
