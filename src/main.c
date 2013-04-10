@@ -51,9 +51,17 @@ void setTranslationTableBase(void) {
 #pragma SWI_ALIAS(make_swi, 47);
 void make_swi(unsigned int foo, char* bar);
 
-#pragma TASK(swi_handler);
+#pragma INTERRUPT(udef_handler, UDEF);
+//#pragma TASK(data_abort);
+interrupt void udef_handler() {
+	int i = 0;
+	i += 2;
+	//logger_error("KERNEL PANIC: data abort");
+}
+
+//#pragma TASK(swi_handler);
 #pragma INTERRUPT(swi_handler,SWI);
-extern void swi_handler(unsigned int foo, char* bar) {
+interrupt void swi_handler(unsigned int foo, char* bar) {
 	/*
 	 * Save return address (R14) on the stack (later this should be saved in the PCB).
 	 * As the arguments (R0 = foo, R1 = bar) have to be the top most values of the stack,
@@ -67,7 +75,7 @@ extern void swi_handler(unsigned int foo, char* bar) {
 	 */
 	asm("\t STMFD R13!, {R0-R1, R14}");
 
-	logger_debug("Hi! This is the SWI-Handler. You have told me: %u: %s", foo, bar);
+	//logger_debug("Hi! This is the SWI-Handler. You have told me: %u: %s", foo, bar);
 	logger_logmode();
 
 	/* Working for setting mode after interrupt:
@@ -105,9 +113,31 @@ extern void swi_handler(unsigned int foo, char* bar) {
 	asm("\t LDMFD R13!, {R14}");
 }
 
-#pragma INTERRUPT(irq_handler, IRQ)
-void irq_handler() {
+#pragma INTERRUPT(pabt_handler, PABT);
+//#pragma TASK(pabt_handler);
+interrupt void pabt_handler() {
+	int i = 0;
+	i += 2;
+	//logger_error("KERNEL PANIC: data abort");
+}
+
+#pragma INTERRUPT(dabt_handler, DABT);
+//#pragma TASK(dabt_handler);
+interrupt void dabt_handler() {
+	int i = 0;
+	i += 2;
+	//logger_error("KERNEL PANIC: data abort");
+}
+
+
+#pragma INTERRUPT(irq_handler, IRQ);
+//#pragma TASK(irq_handler);
+interrupt void irq_handler() {
+	asm("\t STMFD R13!, {R14}");
+
 	logger_error("timer interrupt occurred ....");
+
+	asm("\t LDMFD R13!, {R14}");
 }
 
 void main(void) {
@@ -115,7 +145,7 @@ void main(void) {
 	logger_debug("\r\n\r\nSystem init...");
 	logger_logmode();
 
-    asm("\t CPS 0x10"); // enter User Mode
+    //asm("\t CPS 0x10"); // enter User Mode
 	logger_logmode();
 
     make_swi(4712, "foobar");
@@ -136,26 +166,38 @@ void main(void) {
 	address tldr = (address)((int)GPTIMER1_BASE + GPTIMER_BASE_OFFSET_TLDR);
 	address tmar = (address)((int)GPTIMER1_BASE + GPTIMER_BASE_OFFSET_TMAR);
 
+	*((GPTIMER1_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
+	/**((GPTIMER2_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
+	*((GPTIMER3_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
+	*((GPTIMER4_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
+	*((GPTIMER5_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
+	*((GPTIMER6_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
+	*((GPTIMER7_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
+	*((GPTIMER8_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
+	*((GPTIMER9_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
+	*((GPTIMER10_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
+	*((GPTIMER11_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;*/
+
 	/* disable all interrupt events */
-	*(tier) &= 0x0;
+	*(tier) = 0x0;
 	/* stop the timer if running already */
-	*(tclr) &= ~0x1;
+	*(tclr) = 0x0;
 	/* reset the counter register and load register*/
-	*(tcrr) &= 0x0;
-	*(tldr) &= 0x0;
+	*(tcrr) = 0x0;
+	*(tldr) = 0x0;
 
 	/* set timer match register */
-	*(tmar) = 32000;
+	*(tmar) = 3200000;
 
 	/* enable compare and auto reload modes */
-	*(tclr) |= (1 < GPTIMER_TCLR_COMPARE_ENABLE_OFFSET);
-	*(tclr) |= (1 < GPTIMER_TCLR_AUTORELOAD_MODE_OFFSET);
+	*(tclr) = (1 < GPTIMER_TCLR_COMPARE_ENABLE_OFFSET);
+	*(tclr) = ~(1 < GPTIMER_TCLR_AUTORELOAD_MODE_OFFSET);
 
 	/* enable the match interrupt event */
-	*(tier) |= (1 < GPTIMER_TISR_MATCH_FLAG_OFFSET);
+	*(tier) = (1 < GPTIMER_TISR_MATCH_FLAG_OFFSET);
 
 	/* start the timer */
-	*(tclr) |= (1 < GPTIMER_TCLR_START_STOP_CONTROL_OFFSET);
+	//*(tclr) |= (1 < GPTIMER_TCLR_START_STOP_CONTROL_OFFSET);
 
     while (1) ;
 }

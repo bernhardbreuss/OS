@@ -13,7 +13,7 @@
 #define MAX_PROCESSES 			2
 
 typedef struct {
-	Process *prozessSlots[MAX_PROCESSES];
+	Process_t *prozessSlots[MAX_PROCESSES];
 
 } ProcessManager;
 
@@ -26,6 +26,6 @@ void process_manager_init(ProcessManager *processManager);
  * Adds the Process to the manager.
  * @return The ProcesssId. The ProcessId is set to -1 if the process can not be added.
  */
-ProcessId process_manager_add_process(ProcessManager *processManager, Process *theProcess);
+ProcessId process_manager_add_process(ProcessManager *processManager, Process_t *theProcess);
 
 #endif /* PROCESS_MANAGER_H_ */

@@ -14,7 +14,7 @@ void process_manager_init(ProcessManager *processManager) {
 		processManager->prozessSlots[i] = NULL;
 	}
 }
-ProcessId process_manager_add_process(ProcessManager *processManager, Process *theProcess) {
+ProcessId process_manager_add_process(ProcessManager *processManager, Process_t *theProcess) {
 	int i;
 	ProcessId addedToProcessSlot  = -1;
 	for(i = 0; i < MAX_PROCESSES; i++) {

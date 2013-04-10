@@ -5,14 +5,14 @@
 //
 
 -stack           0x00002000
--heap            0x00002000
+-heap            0x00020000
 
 MEMORY
 {
    SRAM:  	 			ORIGIN = 0x40200000  LENGTH = 0x0000FFC4
    DDR:				  	ORIGIN = 0x80000000  LENGTH = 0x10000000
 
-   INTERRUPT_VECTORS:	ORIGIN = 0x4020FFC4  LENGTH = 0x00000038
+   INTERRUPT_VECTORS:	ORIGIN = 0x4020FFC8  LENGTH = 0x0000001C
 }
 
 stackSize = 0x200;
@@ -32,7 +32,7 @@ SECTIONS
    .cinit      > DDR
    .cio        > DDR
 
-   .text       > DDR
+   .text       > SRAM
    .sysmem     > DDR
    .switch     > DDR
 

@@ -27,8 +27,6 @@ _stackSystem		.long	stackSystem
 ;***************************************************************
 ;* FUNCTION DEF: _c_int00
 ;***************************************************************
-	.global call_this_method_form_boot_asm
-
 _c_int00: .asmfunc
 
 	CPS	0x12 ; IRQ

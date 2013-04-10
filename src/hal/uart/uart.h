@@ -1,6 +1,9 @@
 #ifndef UART_H_
 #define UART_H_
 
+
+#include <inttypes.h>
+
 /*
  * UART module base addresses
  * Size 1 Kb
@@ -188,7 +191,6 @@
 
 // TODO: lol @ this?
 typedef volatile unsigned int mem_address_t;
-typedef unsigned char uint8_t;
 
 /*
  * UART protocol format

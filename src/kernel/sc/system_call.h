@@ -25,7 +25,7 @@ ProcessId sc_wait_for_pid(int pid);
 /**
  * Terminate process execution and return status
  */
-void sc_exit(ProcessState status);
+void sc_exit(ProcessState_t status);
 
 /**
  * Return the caller's process id.

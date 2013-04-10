@@ -17,8 +17,8 @@ int test_process_manager_1(void) {
 
 	int i;
 	int max_processes_plus_one = (MAX_PROCESSES + 1);
-	Process *processes = malloc(sizeof(Process) * max_processes_plus_one);
-	Process *firstProcess = processes;
+	Process_t *processes = malloc(sizeof(Process_t) * max_processes_plus_one);
+	Process_t *firstProcess = processes;
 	ProcessManager processManager;
 
 	//last process is to much for the manager
