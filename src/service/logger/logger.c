@@ -62,6 +62,25 @@ void logger_logmode(void) {
 	logger_debug("System currently in %s mode", logger_getmode(_get_CPSR()));
 }
 
+/**
+ * Format has to contain at least one %s. The first occurrence
+ * of %s is substituted with the binary value of the register.
+ */
+void logger_log_register(char* format, volatile unsigned int * register_ptr) {
+	char bin_reg_val [32];
+	unsigned int register_val = *register_ptr;
+	int i = 0;
+	for(i = 31; i >= 0; i--) {
+		if(register_val & 1) {
+			bin_reg_val[i] = '1';
+		} else {
+			bin_reg_val[i] = '0';
+		}
+		register_val >>= 1;
+	}
+	logger_debug(format, bin_reg_val);
+}
+
 char* logger_getmode(unsigned int cpsr) {
 	char* mode;
 

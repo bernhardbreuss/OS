@@ -6,8 +6,6 @@
 #include "service/logger/logger.h"
 #include "hal/omap3530_timer.h"
 
-typedef volatile unsigned int* address;
-
 /*asm("\t .bss masterTableAddress, 4");
 asm("\t .global masterTableAddress");
 asm("_masterTableAddress .field _masterTableAddress, 32");
@@ -52,14 +50,13 @@ void setTranslationTableBase(void) {
 void make_swi(unsigned int foo, char* bar);
 
 #pragma INTERRUPT(udef_handler, UDEF);
-//#pragma TASK(data_abort);
 interrupt void udef_handler() {
 	int i = 0;
 	i += 2;
-	//logger_error("KERNEL PANIC: data abort");
+	logger_error("KERNEL PANIC: udef handler.");
 }
 
-//#pragma TASK(swi_handler);
+
 #pragma INTERRUPT(swi_handler,SWI);
 interrupt void swi_handler(unsigned int foo, char* bar) {
 	/*
@@ -114,24 +111,21 @@ interrupt void swi_handler(unsigned int foo, char* bar) {
 }
 
 #pragma INTERRUPT(pabt_handler, PABT);
-//#pragma TASK(pabt_handler);
 interrupt void pabt_handler() {
 	int i = 0;
 	i += 2;
-	//logger_error("KERNEL PANIC: data abort");
+	logger_error("KERNLE PANIC: Prefetch abort.");
 }
 
 #pragma INTERRUPT(dabt_handler, DABT);
-//#pragma TASK(dabt_handler);
 interrupt void dabt_handler() {
 	int i = 0;
 	i += 2;
-	//logger_error("KERNEL PANIC: data abort");
+	logger_error("KERNEL PANIC: data abort");
 }
 
 
 #pragma INTERRUPT(irq_handler, IRQ);
-//#pragma TASK(irq_handler);
 interrupt void irq_handler() {
 	asm("\t STMFD R13!, {R14}");
 
@@ -157,47 +151,67 @@ void main(void) {
     logger_debug("I'm done, bye");
 	logger_logmode();
 	
+	unsigned volatile int *tier_2 = (unsigned int*) 0x4903201C;
+	unsigned int tier_capture_bit 	= 0x4;
+	unsigned int tier_overflow_bit 	= 0x2;
+	unsigned int tier_match_bit 	= 0x1;
+
+	unsigned volatile int *tclr_2 = (unsigned int*) 0x49032024;
+	unsigned int tclr_start_bit 		= 0x1;
+	unsigned int tclr_autoreload_bit	= 0x2;
+	unsigned int tclr_trigger_both 		= 0x800;	/*overflow and match*/
+	unsigned int tclr_compare_bit 		= 0x40;
 	
+	unsigned volatile int *tcrr_2 = (unsigned int*) 0x49032028;
+	unsigned volatile int *tldr_2 = (unsigned int*) 0x4903202C;
+	unsigned volatile int *tmar_2 = (unsigned int*) 0x49032038;
+
     logger_debug("Done with SW interrupts, up next timer interrupts ....");
 
-	address tier = (address)((int)GPTIMER1_BASE + GPTIMER_BASE_OFFSET_TIER);
-	address tclr = (address)((int)GPTIMER1_BASE + GPTIMER_BASE_OFFSET_TCLR);
-	address tcrr = (address)((int)GPTIMER1_BASE + GPTIMER_BASE_OFFSET_TCRR);
-	address tldr = (address)((int)GPTIMER1_BASE + GPTIMER_BASE_OFFSET_TLDR);
-	address tmar = (address)((int)GPTIMER1_BASE + GPTIMER_BASE_OFFSET_TMAR);
-
-	*((GPTIMER1_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	/**((GPTIMER2_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	*((GPTIMER3_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	*((GPTIMER4_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	*((GPTIMER5_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	*((GPTIMER6_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	*((GPTIMER7_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	*((GPTIMER8_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	*((GPTIMER9_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	*((GPTIMER10_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	*((GPTIMER11_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;*/
+    logger_log_register("Tier register current status: %s", tier_2);
+    logger_log_register("Tclr register current status: %s", tclr_2);
+    logger_log_register("Tcrr register current status: %s", tcrr_2);
+    logger_log_register("Tldr register current status: %s", tldr_2);
+    logger_log_register("Tmar regiser current status: %s", tmar_2);
+    logger_debug("--------------------------------------------------------------");
 
 	/* disable all interrupt events */
-	*(tier) = 0x0;
-	/* stop the timer if running already */
-	*(tclr) = 0x0;
-	/* reset the counter register and load register*/
-	*(tcrr) = 0x0;
-	*(tldr) = 0x0;
+	*(tier_2) &= ~(tier_capture_bit | tier_overflow_bit | tier_match_bit);
+	logger_log_register("Tier disabled all interrupts: %s", tier_2);
+
+	/* stop the timer if already running */
+	logger_debug("Stop timer with Tclr if running - bit 1");
+	*(tclr_2) &= ~tclr_start_bit;
+	logger_log_register("Tclr now: %s", tclr_2);
+	logger_debug("Enable Tclr Autoreload mode (bit 2) and set set trigger mode to both (overflow and match) (bit 12)");
+	*(tclr_2) |= (tclr_autoreload_bit | tclr_trigger_both);
+	logger_log_register("Tclr now: %s", tclr_2);
+	logger_debug("Tclr enable compare enable - bit 7");
+	*(tclr_2) |= tclr_compare_bit;
+	logger_log_register("Tclr now: %s", tclr_2);
+
+	*(tcrr_2) = 0x0;
+	*(tldr_2) = 0x0;
+	logger_log_register("Tcrr (counter) registerd cleared: %s", tcrr_2);
+	logger_log_register("Tldr (load) registerd cleared: %s", tldr_2);
 
 	/* set timer match register */
-	*(tmar) = 3200000;
-
-	/* enable compare and auto reload modes */
-	*(tclr) = (1 < GPTIMER_TCLR_COMPARE_ENABLE_OFFSET);
-	*(tclr) = ~(1 < GPTIMER_TCLR_AUTORELOAD_MODE_OFFSET);
+	logger_debug("Set tmar register to 3200000 (bin val: 1100001101010000000000)");
+	*(tmar_2) = 3200000;
+	logger_log_register("Tmar now: %s", tmar_2);
 
 	/* enable the match interrupt event */
-	*(tier) = (1 < GPTIMER_TISR_MATCH_FLAG_OFFSET);
+	logger_debug("Set Tier match interrupt flag ...");
+	*(tier_2) |= 0x1;
+	logger_log_register("Tier register now: %s", tier_2);
 
 	/* start the timer */
-	//*(tclr) |= (1 < GPTIMER_TCLR_START_STOP_CONTROL_OFFSET);
+    logger_debug("Timer setup complete .... start it");
+    *(tclr_2) |= tclr_start_bit;
+    logger_log_register("Tclr with bit 1 set to 1, timer should run now: %s", tclr_2);
+
+    /* TODO: register INTCPS handler for this timer interrupt and get it to work */
+    unsigned volatile int mpu_intc = 0x48200000;
 
     while (1) ;
 }
