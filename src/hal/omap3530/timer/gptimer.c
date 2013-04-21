@@ -34,7 +34,7 @@ timer_t gptimer_init_ms() {
 
 	/* set timer overflow match */
 	*(timer + GPTIMER_BASE_OFFSET_TOCR) = 0x0;
-	*(timer + GPTIMER_BASE_OFFSET_TOWR) = 0x1;
+	*(timer + GPTIMER_BASE_OFFSET_TOWR) = 0x1; /* TODO: Muss noch genauer getestet werden, glaube es sind momentan 5 microseconds */
 
 	/* TODO: set clock source */
 
