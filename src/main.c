@@ -4,7 +4,8 @@
  */
 #include <inttypes.h>
 #include "service/logger/logger.h"
-#include "hal/omap3530_timer.h"
+#include "hal/generic/timer/gptimer.h"
+#include <stdio.h>
 
 typedef volatile unsigned int* address;
 
@@ -129,15 +130,21 @@ interrupt void dabt_handler() {
 	//logger_error("KERNEL PANIC: data abort");
 }
 
+timer_t main_timer;
+unsigned volatile int irq_number = 0;
+
+void clear_pending_interrupts(timer_t);
 
 #pragma INTERRUPT(irq_handler, IRQ);
 //#pragma TASK(irq_handler);
 interrupt void irq_handler() {
-	asm("\t STMFD R13!, {R14}");
+	if (++irq_number % 100000 == 0) {
+		logger_error("Interrupt number: %u", irq_number);
+	}
 
-	logger_error("timer interrupt occurred ....");
-
-	asm("\t LDMFD R13!, {R14}");
+	/* clear all pending interrupts */
+	clear_pending_interrupts(main_timer);
+	*((unsigned int*)0x48200048) = 0x1; /* INTCPS_CONTROL s. 1083 */
 }
 
 void main(void) {
@@ -145,59 +152,14 @@ void main(void) {
 	logger_debug("\r\n\r\nSystem init...");
 	logger_logmode();
 
-    //asm("\t CPS 0x10"); // enter User Mode
-	logger_logmode();
 
-    make_swi(4712, "foobar");
-    //logger_debug("swi returned: %u", c);
-	logger_logmode();
+	/* activate the specific interrupt (interrupt mask) */
+	address mpuintc_mir_clearn_1 = (unsigned int*)(0x48200000+0x88+((38/32)*0x20));
+	unsigned int gp2_irq = (1 << (38 % 32));
+	*(mpuintc_mir_clearn_1) = gp2_irq;
 
-	make_swi(0x4712, "hugo");
-
-    logger_debug("I'm done, bye");
-	logger_logmode();
-	
-	
-    logger_debug("Done with SW interrupts, up next timer interrupts ....");
-
-	address tier = (address)((int)GPTIMER1_BASE + GPTIMER_BASE_OFFSET_TIER);
-	address tclr = (address)((int)GPTIMER1_BASE + GPTIMER_BASE_OFFSET_TCLR);
-	address tcrr = (address)((int)GPTIMER1_BASE + GPTIMER_BASE_OFFSET_TCRR);
-	address tldr = (address)((int)GPTIMER1_BASE + GPTIMER_BASE_OFFSET_TLDR);
-	address tmar = (address)((int)GPTIMER1_BASE + GPTIMER_BASE_OFFSET_TMAR);
-
-	*((GPTIMER1_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	/**((GPTIMER2_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	*((GPTIMER3_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	*((GPTIMER4_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	*((GPTIMER5_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	*((GPTIMER6_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	*((GPTIMER7_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	*((GPTIMER8_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	*((GPTIMER9_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	*((GPTIMER10_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;
-	*((GPTIMER11_BASE + GPTIMER_BASE_OFFSET_TCLR)) &= ~0x0;*/
-
-	/* disable all interrupt events */
-	*(tier) = 0x0;
-	/* stop the timer if running already */
-	*(tclr) = 0x0;
-	/* reset the counter register and load register*/
-	*(tcrr) = 0x0;
-	*(tldr) = 0x0;
-
-	/* set timer match register */
-	*(tmar) = 3200000;
-
-	/* enable compare and auto reload modes */
-	*(tclr) = (1 < GPTIMER_TCLR_COMPARE_ENABLE_OFFSET);
-	*(tclr) = ~(1 < GPTIMER_TCLR_AUTORELOAD_MODE_OFFSET);
-
-	/* enable the match interrupt event */
-	*(tier) = (1 < GPTIMER_TISR_MATCH_FLAG_OFFSET);
-
-	/* start the timer */
-	//*(tclr) |= (1 < GPTIMER_TCLR_START_STOP_CONTROL_OFFSET);
+	main_timer = gptimer_init_ms();
+	gptimer_start(main_timer);
 
     while (1) ;
 }

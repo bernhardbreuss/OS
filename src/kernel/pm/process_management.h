@@ -1,7 +1,7 @@
 #ifndef PROCESS_MANAGEMENT_H_
 #define PROCESS_MANAGEMENT_H_
 
-#include "../prcoess.h"
+#include "../process.h"
 
 #define TABLE_SIZE 10		// TODO: TABLE_SIZE? Maybe there is a better description of that...
 
@@ -25,7 +25,7 @@ typedef struct {
 
 void pm_init();
 
-int pm_register_process(const ProcessManagementEntry_t* pme);
+//int pm_register_process(const ProcessManagementEntry_t* pme);
 
 ProcessTableEntry_t* pm_get_process(int id);
 

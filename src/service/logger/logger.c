@@ -47,7 +47,7 @@ void log(char* type, char* format, va_list arglist) {
 
 	int l = vsnprintf(buffer, LOGGER_BUFFER_SIZE, format, arglist);
 
-	if (l >= (LOGGER_BUFFER_SIZE - 3)) {
+	if (l < 0 || l >= (LOGGER_BUFFER_SIZE - 3)) {
 		l = (LOGGER_BUFFER_SIZE - 3);
 	}
 	buffer[l] = '\r';
