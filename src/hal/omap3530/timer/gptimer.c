@@ -84,11 +84,11 @@ void gptimer_init_ms(gptimer_t* const timer, const gptimer_config_t* const confi
 }
 
 void gptimer_start(gptimer_t* const timer) {
-	*timer->TIER |= GPTIMER_TIER_OVERFLOW_ENABLE;
-	*timer->TCLR |= GPTIMER_TCLR_START_STOP_CONTROL;
+	*(timer->TIER) |= GPTIMER_TIER_OVERFLOW_ENABLE;
+	*(timer->TCLR) |= GPTIMER_TCLR_START_STOP_CONTROL;
 }
 
 void clear_pending_interrupts(gptimer_t* const timer) {
-	*timer->TISR = (GPTIMER_TISR_CAPTURE_FLAG
+	*(timer->TISR) = (GPTIMER_TISR_CAPTURE_FLAG
 			| GPTIMER_TISR_MATCH_FLAG | GPTIMER_TISR_OVERFLOW_FLAG);
 }
