@@ -125,10 +125,8 @@ interrupt void dabt_handler() {
 	logger_error("KERNEL PANIC: data abort");
 }
 
-timer_t main_timer;
+gptimer_t main_timer;
 unsigned volatile int irq_number = 0;
-
-void clear_pending_interrupts(timer_t);
 
 #pragma INTERRUPT(irq_handler, IRQ);
 interrupt void irq_handler() {
@@ -137,92 +135,26 @@ interrupt void irq_handler() {
 	}
 
 	/* clear all pending interrupts */
-	clear_pending_interrupts(main_timer);
+	clear_pending_interrupts(&main_timer);
 	*((unsigned int*)0x48200048) = 0x1; /* INTCPS_CONTROL s. 1083 */
 }
 
 void main(void) {
 	logger_init();
 	logger_debug("\r\n\r\nSystem init...");
+	make_swi(0x4712, "hugo");
 	logger_logmode();
-
 
 	/* activate the specific interrupt (interrupt mask) */
 	unsigned int* mpuintc_mir_clearn_1 = (unsigned int*)(0x48200000+0x88+((38/32)*0x20));
 	unsigned int gp2_irq = (1 << (38 % 32));
 	*(mpuintc_mir_clearn_1) = gp2_irq;
 
-	main_timer = gptimer_init_ms();
-	gptimer_start(main_timer);
+	main_timer = gptimer_get(2);
+	gptimer_config_t gptimer_conf;
+	gptimer_conf.ticks_in_millis = 1;
+	gptimer_init_ms(&main_timer, &gptimer_conf);
+	gptimer_start(&main_timer);
 
     while (1) ;
-}
-
-void edis_timerstuff(void) {
-	make_swi(0x4712, "hugo");
-
-    logger_debug("I'm done, bye");
-	logger_logmode();
-	
-	unsigned volatile int *tier_2 = (unsigned int*) 0x4903201C;
-	unsigned int tier_capture_bit 	= 0x4;
-	unsigned int tier_overflow_bit 	= 0x2;
-	unsigned int tier_match_bit 	= 0x1;
-
-	unsigned volatile int *tclr_2 = (unsigned int*) 0x49032024;
-	unsigned int tclr_start_bit 		= 0x1;
-	unsigned int tclr_autoreload_bit	= 0x2;
-	unsigned int tclr_trigger_both 		= 0x800;	/*overflow and match*/
-	unsigned int tclr_compare_bit 		= 0x40;
-	
-	unsigned volatile int *tcrr_2 = (unsigned int*) 0x49032028;
-	unsigned volatile int *tldr_2 = (unsigned int*) 0x4903202C;
-	unsigned volatile int *tmar_2 = (unsigned int*) 0x49032038;
-
-    logger_debug("Done with SW interrupts, up next timer interrupts ....");
-
-    logger_log_register("Tier register current status: %s", tier_2);
-    logger_log_register("Tclr register current status: %s", tclr_2);
-    logger_log_register("Tcrr register current status: %s", tcrr_2);
-    logger_log_register("Tldr register current status: %s", tldr_2);
-    logger_log_register("Tmar regiser current status: %s", tmar_2);
-    logger_debug("--------------------------------------------------------------");
-
-	/* disable all interrupt events */
-	*(tier_2) &= ~(tier_capture_bit | tier_overflow_bit | tier_match_bit);
-	logger_log_register("Tier disabled all interrupts: %s", tier_2);
-
-	/* stop the timer if already running */
-	logger_debug("Stop timer with Tclr if running - bit 1");
-	*(tclr_2) &= ~tclr_start_bit;
-	logger_log_register("Tclr now: %s", tclr_2);
-	logger_debug("Enable Tclr Autoreload mode (bit 2) and set set trigger mode to both (overflow and match) (bit 12)");
-	*(tclr_2) |= (tclr_autoreload_bit | tclr_trigger_both);
-	logger_log_register("Tclr now: %s", tclr_2);
-	logger_debug("Tclr enable compare enable - bit 7");
-	*(tclr_2) |= tclr_compare_bit;
-	logger_log_register("Tclr now: %s", tclr_2);
-
-	*(tcrr_2) = 0x0;
-	*(tldr_2) = 0x0;
-	logger_log_register("Tcrr (counter) registerd cleared: %s", tcrr_2);
-	logger_log_register("Tldr (load) registerd cleared: %s", tldr_2);
-
-	/* set timer match register */
-	logger_debug("Set tmar register to 3200000 (bin val: 1100001101010000000000)");
-	*(tmar_2) = 3200000;
-	logger_log_register("Tmar now: %s", tmar_2);
-
-	/* enable the match interrupt event */
-	logger_debug("Set Tier match interrupt flag ...");
-	*(tier_2) |= 0x1;
-	logger_log_register("Tier register now: %s", tier_2);
-
-	/* start the timer */
-    logger_debug("Timer setup complete .... start it");
-    *(tclr_2) |= tclr_start_bit;
-    logger_log_register("Tclr with bit 1 set to 1, timer should run now: %s", tclr_2);
-
-    /* TODO: register INTCPS handler for this timer interrupt and get it to work */
-    unsigned volatile int mpu_intc = 0x48200000;
 }

@@ -12,17 +12,17 @@
 
 /* OMAPP35x.pdf - page 2632 -> base addresses of GP Timer module instances */
 /* each timer 4k bytes */
-#define GPTIMER1 		((address)0x48318000)
-#define GPTIMER2		((address)0x49032000)
-#define GPTIMER3 		((address)0x49034000)
-#define GPTIMER4 		((address)0x49036000)
-#define GPTIMER5		((address)0x49038000)
-#define GPTIMER6 		((address)0x4903A000)
-#define GPTIMER7		((address)0x4903C000)
-#define GPTIMER8		((address)0x4903E000)
-#define GPTIMER9		((address)0x49040000)
-#define GPTIMER10		((address)0x48086000)
-#define GPTIMER11		((address)0x48088000)
+#define GPTIMER1 		((unsigned int) 0x48318000)
+#define GPTIMER2		((unsigned int) 0x49032000)
+#define GPTIMER3 		((unsigned int) 0x49034000)
+#define GPTIMER4 		((unsigned int) 0x49036000)
+#define GPTIMER5		((unsigned int) 0x49038000)
+#define GPTIMER6 		((unsigned int) 0x4903A000)
+#define GPTIMER7		((unsigned int) 0x4903C000)
+#define GPTIMER8		((unsigned int) 0x4903E000)
+#define GPTIMER9		((unsigned int) 0x49040000)
+#define GPTIMER10		((unsigned int) 0x48086000)
+#define GPTIMER11		((unsigned int) 0x48088000)
 
 /* GP Timer Register offsets */
 #define GPTIMER_BASE_OFFSET_TIDR			(0x00 / 4)
