@@ -5,47 +5,48 @@
 #include <inttypes.h>
 #include "service/logger/logger.h"
 #include "hal/generic/timer/gptimer.h"
+#include "hal/omap3530/timer/gptimer.h"
 #include <stdio.h>
 
 /*asm("\t .bss masterTableAddress, 4");
-asm("\t .global masterTableAddress");
-asm("_masterTableAddress .field _masterTableAddress, 32");
+ asm("\t .global masterTableAddress");
+ asm("_masterTableAddress .field _masterTableAddress, 32");
 
-extern volatile unsigned int* _masterTableAddress;
+ extern volatile unsigned int* _masterTableAddress;
 
-void enableMMU(void) {
-	asm("\t MRC p15, #0, r1, c1, c0, #0");
-	// MRC Move to ARM register from coprocessor (CP15 register to ARM register)
-	// p15	ist der coprocessor
-	// #0	is a coprocessor-specific opcode
-	// r1	is the ARM destination register
-	// c1	first  coprocessor source register (c1 ist das Control Register des coprocessor; sihe S. 153 cortexA8.pdf)
-	// c0	second coprocessor source register
-	// #0	is an optional coprocessor-specific opcode
+ void enableMMU(void) {
+ asm("\t MRC p15, #0, r1, c1, c0, #0");
+ // MRC Move to ARM register from coprocessor (CP15 register to ARM register)
+ // p15	ist der coprocessor
+ // #0	is a coprocessor-specific opcode
+ // r1	is the ARM destination register
+ // c1	first  coprocessor source register (c1 ist das Control Register des coprocessor; sihe S. 153 cortexA8.pdf)
+ // c0	second coprocessor source register
+ // #0	is an optional coprocessor-specific opcode
 
-	asm("\t ORR r1, r1, #0x1");
-	// ORR Logical OR
-	// r1	is the destination register
-	// r1	is the register holding the first operand
-	// #0x1	is a flexible second operand (hier einfach hex 1)
+ asm("\t ORR r1, r1, #0x1");
+ // ORR Logical OR
+ // r1	is the destination register
+ // r1	is the register holding the first operand
+ // #0x1	is a flexible second operand (hier einfach hex 1)
 
-	asm("\t MCR p15, #0, r1, c1, c0, #0");
-	// MCR Move to coprocessor from ARM registers
-	// p15	ist der coprocessor
-	// #0	is a coprocessor-specific opcode
-	// r1	is the ARM destination register
-	// c1	first coprocessor source register
-	// c0	second coprocessor source register
-	// #0	is an optional coprocessor-specific opcode
+ asm("\t MCR p15, #0, r1, c1, c0, #0");
+ // MCR Move to coprocessor from ARM registers
+ // p15	ist der coprocessor
+ // #0	is a coprocessor-specific opcode
+ // r1	is the ARM destination register
+ // c1	first coprocessor source register
+ // c0	second coprocessor source register
+ // #0	is an optional coprocessor-specific opcode
 
-	// Kurz
-}
+ // Kurz
+ }
 
-void setTranslationTableBase(void) {
-	asm("\t LDR r0, _masterTableAddress");
-    asm("\t LDR r0, [r0]\n");
-	asm("\t MCR p15, #0, r0, c2, c0, #0");
-}*/
+ void setTranslationTableBase(void) {
+ asm("\t LDR r0, _masterTableAddress");
+ asm("\t LDR r0, [r0]\n");
+ asm("\t MCR p15, #0, r0, c2, c0, #0");
+ }*/
 
 #pragma SWI_ALIAS(make_swi, 47);
 void make_swi(unsigned int foo, char* bar);
@@ -56,7 +57,6 @@ interrupt void udef_handler() {
 	i += 2;
 	logger_error("KERNEL PANIC: udef handler.");
 }
-
 
 #pragma INTERRUPT(swi_handler,SWI);
 interrupt void swi_handler(unsigned int foo, char* bar) {
@@ -78,11 +78,10 @@ interrupt void swi_handler(unsigned int foo, char* bar) {
 
 	/* Working for setting mode after interrupt:
 	 * asm("\t MRS R12, SPSR");
-	asm("\t ORR R12, R12, #0x1F");
-	asm("\t MSR SPSR, R12");*/
+	 asm("\t ORR R12, R12, #0x1F");
+	 asm("\t MSR SPSR, R12");*/
 
 	//return 4711;
-
 	/*
 	 * Remove the self pushed arguments from the stack.
 	 * As one register has 32 bit (4 byte), the stack pointer (R13) has to be changed by 8 byte
@@ -136,25 +135,52 @@ interrupt void irq_handler() {
 
 	/* clear all pending interrupts */
 	clear_pending_interrupts(&main_timer);
-	*((unsigned int*)0x48200048) = 0x1; /* INTCPS_CONTROL s. 1083 */
+	*((unsigned int*) 0x48200048) = 0x1; /* INTCPS_CONTROL s. 1083 */
 }
 
 void main(void) {
 	logger_init();
 	logger_debug("\r\n\r\nSystem init...");
-	make_swi(0x4712, "hugo");
+	//make_swi(0x4712, "hugo");
 	logger_logmode();
 
 	/* activate the specific interrupt (interrupt mask) */
-	unsigned int* mpuintc_mir_clearn_1 = (unsigned int*)(0x48200000+0x88+((38/32)*0x20));
+	unsigned int* mpuintc_mir_clearn_1 = (unsigned int*) (0x48200000 + 0x88
+			+ ((38 / 32) * 0x20));
 	unsigned int gp2_irq = (1 << (38 % 32));
 	*(mpuintc_mir_clearn_1) = gp2_irq;
 
-	main_timer = gptimer_get(2);
-	gptimer_config_t gptimer_conf;
-	gptimer_conf.ticks_in_millis = 1;
-	gptimer_init_ms(&main_timer, &gptimer_conf);
-	gptimer_start(&main_timer);
+	/*main_timer = gptimer_get(2);
+	 gptimer_config_t gptimer_conf;
+	 gptimer_conf.ticks_in_millis = 1;
+	 gptimer_init_ms(&main_timer, &gptimer_conf);
+	 gptimer_start(&main_timer);
+	 */
 
-    while (1) ;
+	gptimer_pwm_setup();
+	gptimer_t pwm_timer1 = gptimer_pwm_get(PWM_GPTIMER9);
+	gptimer_t pwm_timer2 = gptimer_pwm_get(PWM_GPTIMER10);
+	gptimer_t pwm_timer3 = gptimer_pwm_get(PWM_GPTIMER11);
+
+	gptimer_pwm_clear(&pwm_timer1);
+	gptimer_pwm_clear(&pwm_timer2);
+	gptimer_pwm_clear(&pwm_timer3);
+
+	gptimer_pwm_config_t pwm_config;
+//	pwm_config.PT = PWM_PT_TOGGLE;
+//	pwm_config.SCPWM = PWM_SCPWM_DEFAULT_HIGH;
+//	pwm_config.TRG = PWM_TRG_OVERFLOW_AND_MATCH;
+	pwm_config.high_percentage = 50;
+	pwm_config.timer_config->ticks_in_millis = 1;
+
+	gptimer_pwm_init(&pwm_timer1, &pwm_config);
+	gptimer_pwm_init(&pwm_timer2, &pwm_config);
+	gptimer_pwm_init(&pwm_timer3, &pwm_config);
+
+	gptimer_pwm_clear(&pwm_timer1);
+	gptimer_pwm_clear(&pwm_timer2);
+	gptimer_pwm_clear(&pwm_timer3);
+
+	while (1)
+		;
 }
