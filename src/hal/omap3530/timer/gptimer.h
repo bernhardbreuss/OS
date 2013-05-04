@@ -73,6 +73,8 @@ in TCRR will be the sub-period value or the over-period value. */
 #define GPTIMER_TCLR_TRIGER_OVERFLOW_MATCH	BIT11
 #define GPTIMER_TCLR_PRESCALE				BIT5
 
+void gptimer_handler(void);
+
 #endif /* OMAP3530_TIMER_H_ */
 
 /*

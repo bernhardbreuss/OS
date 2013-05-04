@@ -8,8 +8,12 @@
 #ifndef PS_H_
 #define PS_H_
 
+#include "../hal/platform.h"
+
 typedef int (*process_func)(void);
-typedef int ProcessId;
+typedef int ProcessId_t;
+
+#define INVALID_PROCESS_ID -1
 
 typedef enum {
 	READY,
@@ -24,10 +28,11 @@ typedef enum {
 } ProcessPriority_t;
 
 typedef struct {
-	ProcessId pid;
+	ProcessId_t pid;
 	process_func func;
 	ProcessState_t state;
 	ProcessPriority_t priority;
+	void* saved_context[PROCESS_CONTEXT_SIZE];
 } Process_t;
 
 #endif /* PS_H_ */

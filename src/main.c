@@ -1,51 +1,13 @@
 /*
  * main.c
- * For playing with the MMU
  */
+
 #include <inttypes.h>
 #include "service/logger/logger.h"
 #include "hal/generic/timer/gptimer.h"
+#include "kernel/process.h"
+#include "kernel/process_manager.h"
 #include <stdio.h>
-
-/*asm("\t .bss masterTableAddress, 4");
-asm("\t .global masterTableAddress");
-asm("_masterTableAddress .field _masterTableAddress, 32");
-
-extern volatile unsigned int* _masterTableAddress;
-
-void enableMMU(void) {
-	asm("\t MRC p15, #0, r1, c1, c0, #0");
-	// MRC Move to ARM register from coprocessor (CP15 register to ARM register)
-	// p15	ist der coprocessor
-	// #0	is a coprocessor-specific opcode
-	// r1	is the ARM destination register
-	// c1	first  coprocessor source register (c1 ist das Control Register des coprocessor; sihe S. 153 cortexA8.pdf)
-	// c0	second coprocessor source register
-	// #0	is an optional coprocessor-specific opcode
-
-	asm("\t ORR r1, r1, #0x1");
-	// ORR Logical OR
-	// r1	is the destination register
-	// r1	is the register holding the first operand
-	// #0x1	is a flexible second operand (hier einfach hex 1)
-
-	asm("\t MCR p15, #0, r1, c1, c0, #0");
-	// MCR Move to coprocessor from ARM registers
-	// p15	ist der coprocessor
-	// #0	is a coprocessor-specific opcode
-	// r1	is the ARM destination register
-	// c1	first coprocessor source register
-	// c0	second coprocessor source register
-	// #0	is an optional coprocessor-specific opcode
-
-	// Kurz
-}
-
-void setTranslationTableBase(void) {
-	asm("\t LDR r0, _masterTableAddress");
-    asm("\t LDR r0, [r0]\n");
-	asm("\t MCR p15, #0, r0, c2, c0, #0");
-}*/
 
 #pragma SWI_ALIAS(make_swi, 47);
 void make_swi(unsigned int foo, char* bar);
@@ -53,8 +15,7 @@ void make_swi(unsigned int foo, char* bar);
 #pragma INTERRUPT(udef_handler, UDEF);
 interrupt void udef_handler() {
 	int i = 0;
-	i += 2;
-	logger_error("KERNEL PANIC: udef handler.");
+	i += 2;	logger_error("KERNEL PANIC: udef handler.");
 }
 
 
@@ -126,19 +87,53 @@ interrupt void dabt_handler() {
 }
 
 timer_t main_timer;
-unsigned volatile int irq_number = 0;
 
 void clear_pending_interrupts(timer_t);
 
-#pragma INTERRUPT(irq_handler, IRQ);
-interrupt void irq_handler() {
-	if (++irq_number % 100000 == 0) {
-		logger_error("Interrupt number: %u", irq_number);
-	}
+ProcessManager_t processManager;
+ProcessId_t currentProcessId;
 
-	/* clear all pending interrupts */
-	clear_pending_interrupts(main_timer);
-	*((unsigned int*)0x48200048) = 0x1; /* INTCPS_CONTROL s. 1083 */
+#define LED0_PIN			(1 << 21)
+#define LED1_PIN			(1 << 22)
+#define GPIO5_OUT			(unsigned int*) 0x4905603C
+
+int led0(void) {
+	int i;
+	logger_debug("Led 0");
+	while (1) {
+		for(i = 0; i < 450000; i++) ;
+		*(GPIO5_OUT) ^= LED0_PIN;
+	}
+}
+
+int led1(void) {
+	int i;
+	logger_debug("Led 1");
+	while (1) {
+		for(i = 0; i < 900000; i++);
+		*(GPIO5_OUT) ^= LED1_PIN;
+	}
+}
+
+int idle_task(void) {
+	while (1) ; /* TODO: look manual for HALT command or similar to reduce power consumption */
+}
+
+void turnoff_rgb(void) {
+	/* set mode to 4 (GPIO) see p. ~787 of omap35x.pdf */
+	unsigned int* CONTROL_PADCONF_UART2_CTS = (unsigned int*)0x48002174; /* GPIO144 15:0 GPIO145 16:32 */
+	unsigned int* CONTROL_PADCONF_UART2_TX = (unsigned int*)0x48002178; /* GPIO146 15:0 */
+	*(CONTROL_PADCONF_UART2_CTS) = (4 << 16) | 4;
+	*(CONTROL_PADCONF_UART2_TX) &= ~7;
+	*(CONTROL_PADCONF_UART2_TX) |= 4;
+
+	/* turn off rgb led on dmx interface
+	 *  GPIO 144, 146, 145 --> GPIO 5 */
+	unsigned int* GPIO5_OE = (unsigned int*)0x49056034;
+	unsigned int* GPIO5_DATAOUT = (unsigned int*)0x4905603C;
+	unsigned int rgb = (1 << (144 % 32)) | (1 << (146 % 32)) | (1 << (145 % 32));
+	*(GPIO5_OE) &= ~rgb;
+	*(GPIO5_DATAOUT) &= ~rgb;
 }
 
 void main(void) {
@@ -146,6 +141,25 @@ void main(void) {
 	logger_debug("\r\n\r\nSystem init...");
 	logger_logmode();
 
+	/* init led stuff */
+	turnoff_rgb();
+	#define GPIO5_DIR  			(unsigned int*) 0x49056094
+	*(GPIO5_DIR) |= LED0_PIN | LED1_PIN;
+
+	process_manager_init(&processManager);
+
+	Process_t process1;
+	process1.func = &led0;
+	currentProcessId = process_manager_add_process(&processManager, &process1);
+
+	Process_t process2;
+	process2.func = &led1;
+	process_manager_add_process(&processManager, &process2);
+
+	/* idle task */
+	Process_t idle_process;
+	idle_process.func = &idle_task;
+	process_manager_add_process(&processManager, &idle_process);
 
 	/* activate the specific interrupt (interrupt mask) */
 	unsigned int* mpuintc_mir_clearn_1 = (unsigned int*)(0x48200000+0x88+((38/32)*0x20));
@@ -155,7 +169,8 @@ void main(void) {
 	main_timer = gptimer_init_ms();
 	gptimer_start(main_timer);
 
-    while (1) ;
+	processManager.currentProcessId = idle_process.pid;
+	idle_task();
 }
 
 void edis_timerstuff(void) {

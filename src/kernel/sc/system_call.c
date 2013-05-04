@@ -2,7 +2,7 @@
 
 // TODO implement the functions...
 
-ProcessId sc_fork() {
+ProcessId_t sc_fork() {
 	// Tired as hell... procrastination mode: active... good night.
 	return -1;
 }

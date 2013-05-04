@@ -19,7 +19,7 @@ int test_process_manager_1(void) {
 	int max_processes_plus_one = (MAX_PROCESSES + 1);
 	Process_t *processes = malloc(sizeof(Process_t) * max_processes_plus_one);
 	Process_t *firstProcess = processes;
-	ProcessManager processManager;
+	ProcessManager_t processManager;
 
 	//last process is to much for the manager
 	for(i = 0; i < max_processes_plus_one; i++) {
@@ -45,7 +45,7 @@ int test_process_manager_1(void) {
 		processes++;
 	}
 	//this process has been to much for the manager
-	if(processes->pid != -1) {
+	if(processes->pid != INVALID_PROCESS_ID) {
 		return -2;
 	}
 
