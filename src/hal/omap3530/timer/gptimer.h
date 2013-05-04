@@ -9,20 +9,21 @@
 #define OMAP3530_TIMER_H_
 
 #include "../../../bit.h"
+#include "../../generic/timer/gptimer.h"
 
 /* OMAPP35x.pdf - page 2632 -> base addresses of GP Timer module instances */
 /* each timer 4k bytes */
-#define GPTIMER1 		((address)0x48318000)
-#define GPTIMER2		((address)0x49032000)
-#define GPTIMER3 		((address)0x49034000)
-#define GPTIMER4 		((address)0x49036000)
-#define GPTIMER5		((address)0x49038000)
-#define GPTIMER6 		((address)0x4903A000)
-#define GPTIMER7		((address)0x4903C000)
-#define GPTIMER8		((address)0x4903E000)
-#define GPTIMER9		((address)0x49040000)
-#define GPTIMER10		((address)0x48086000)
-#define GPTIMER11		((address)0x48088000)
+#define GPTIMER1 		((unsigned int) 0x48318000)
+#define GPTIMER2		((unsigned int) 0x49032000)
+#define GPTIMER3 		((unsigned int) 0x49034000)
+#define GPTIMER4 		((unsigned int) 0x49036000)
+#define GPTIMER5		((unsigned int) 0x49038000)
+#define GPTIMER6 		((unsigned int) 0x4903A000)
+#define GPTIMER7		((unsigned int) 0x4903C000)
+#define GPTIMER8		((unsigned int) 0x4903E000)
+#define GPTIMER9		((unsigned int) 0x49040000)
+#define GPTIMER10		((unsigned int) 0x48086000)
+#define GPTIMER11		((unsigned int) 0x48088000)
 
 /* GP Timer Register offsets */
 #define GPTIMER_BASE_OFFSET_TIDR			(0x00 / 4)
@@ -74,6 +75,40 @@ in TCRR will be the sub-period value or the over-period value. */
 #define GPTIMER_TCLR_PRESCALE				BIT5
 
 void gptimer_handler(void);
+
+/* ************************* *
+ * 			PWM
+ * ************************* */
+
+#define PWM_GPTIMER8	8
+#define PWM_GPTIMER9	9
+#define PWM_GPTIMER10	10
+#define PWM_GPTIMER11	11
+
+#define PWM_TRG_OVERFLOW					BIT10
+#define PWM_TRG_OVERFLOW_AND_MATCH			(BIT10 | BIT11)
+
+#define PWM_SCPWM_DEFAULT_HIGH				BIT7
+
+#define PWM_PT_TOGGLE						BIT12
+
+typedef struct _gptimer_pwm_config_t {
+	gptimer_config_t* timer_config;
+	unsigned int volatile TRG;			// set pin to toggle on an event
+	unsigned int volatile PT;			// set pin to toggle on an event
+	unsigned int volatile SCPWM;		// set default value of PWM output. Set or clear the PWM output signal only while the counter is stopped or trigger is off.
+	unsigned char high_percentage;		// 0-100. Represents high part of the PWD signal in percent.
+} gptimer_pwm_config_t;
+
+void gptimer_pwm_setup();
+
+gptimer_t gptimer_pwm_get(int pwm_timer_nr);
+
+void gptimer_pwm_clear(gptimer_t* const timer);
+
+void gptimer_pwm_init(gptimer_t* const timer, gptimer_pwm_config_t* const config);
+
+void gptimer_pwm_start(gptimer_t* const timer);
 
 #endif /* OMAP3530_TIMER_H_ */
 
