@@ -83,9 +83,11 @@ void gptimer_init_ms(gptimer_t* const timer, const gptimer_config_t* const confi
 
 	/* set timer overflow match */
 	*(timer->TOCR) = 0x0;
-	*(timer->TOWR) = 0x18D; /* TODO: Muss noch genauer getestet werden, glaube es sind momentan 5 microseconds */
+	*(timer->TOWR) = 0x18D; /* TODO: Muss noch mit clock source getestet werde, jetzt 1ms */
 
-	/* TODO: set clock source */
+	/* TODO: set clock source
+	 * OMAP35x.pdf, page 305.
+	 * Sync timer OMAP35x.pdf, page 2678 */
 
 	*(timer->TCLR) |= (GPTIMER_TCLR_COMPARE_ENABLE | GPTIMER_TCLR_AUTORELOAD_MODE
 			| GPTIMER_TCLR_TRIGER_OVERFLOW_MATCH);
