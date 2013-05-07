@@ -5,7 +5,7 @@
 //
 
 -stack           0x00002000
--heap            0x0F000000
+-heap            0x00F00000
 
 MEMORY
 {
@@ -33,6 +33,7 @@ SECTIONS
    .cio        > DDR
 
    .text       > SRAM
+   .sysmem     > DDR
    .switch     > DDR
 
    .stackArea > DDR {
@@ -46,5 +47,4 @@ SECTIONS
        . = . + stackSize;
        stackSystem = .;
    }
-   .sysmem     > DDR
 }

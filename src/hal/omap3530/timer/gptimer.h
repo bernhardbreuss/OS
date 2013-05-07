@@ -9,21 +9,22 @@
 #define OMAP3530_TIMER_H_
 
 #include "../../../bit.h"
-#include "../../generic/timer/gptimer.h"
+#include "../mpu_subsystem/intcps.h"
+
 
 /* OMAPP35x.pdf - page 2632 -> base addresses of GP Timer module instances */
 /* each timer 4k bytes */
-#define GPTIMER1 		((unsigned int) 0x48318000)
-#define GPTIMER2		((unsigned int) 0x49032000)
-#define GPTIMER3 		((unsigned int) 0x49034000)
-#define GPTIMER4 		((unsigned int) 0x49036000)
-#define GPTIMER5		((unsigned int) 0x49038000)
-#define GPTIMER6 		((unsigned int) 0x4903A000)
-#define GPTIMER7		((unsigned int) 0x4903C000)
-#define GPTIMER8		((unsigned int) 0x4903E000)
-#define GPTIMER9		((unsigned int) 0x49040000)
-#define GPTIMER10		((unsigned int) 0x48086000)
-#define GPTIMER11		((unsigned int) 0x48088000)
+#define GPTIMER1 		((unsigned int*) 0x48318000)
+#define GPTIMER2		((unsigned int*) 0x49032000)
+#define GPTIMER3 		((unsigned int*) 0x49034000)
+#define GPTIMER4 		((unsigned int*) 0x49036000)
+#define GPTIMER5		((unsigned int*) 0x49038000)
+#define GPTIMER6 		((unsigned int*) 0x4903A000)
+#define GPTIMER7		((unsigned int*) 0x4903C000)
+#define GPTIMER8		((unsigned int*) 0x4903E000)
+#define GPTIMER9		((unsigned int*) 0x49040000)
+#define GPTIMER10		((unsigned int*) 0x48086000)
+#define GPTIMER11		((unsigned int*) 0x48088000)
 
 /* GP Timer Register offsets */
 #define GPTIMER_BASE_OFFSET_TIDR			(0x00 / 4)
@@ -74,6 +75,42 @@ in TCRR will be the sub-period value or the over-period value. */
 #define GPTIMER_TCLR_TRIGER_OVERFLOW_MATCH	BIT11
 #define GPTIMER_TCLR_PRESCALE				BIT5
 
+typedef struct _gptimer_t {
+	intcps_gptimer_mapping_t intcps_mapping_id;
+	unsigned int* volatile TIDR;
+	unsigned int* volatile TIOCP_CFG;
+	unsigned int* volatile TISTAT;
+	unsigned int* volatile TISR;
+	unsigned int* volatile TIER;
+	unsigned int* volatile TWER;
+	unsigned int* volatile TCLR;
+	unsigned int* volatile TCRR;
+	unsigned int* volatile TLDR;
+	unsigned int* volatile TTGR;
+	unsigned int* volatile TWPS;
+	unsigned int* volatile TMAR;
+	unsigned int* volatile TCAR1;
+	unsigned int* volatile TSICR;
+	unsigned int* volatile TCAR2;
+	unsigned int* volatile TPIR;
+	int* volatile TNIR;
+	unsigned int* volatile TCVR;
+	unsigned int* volatile TOCR;
+	unsigned int* volatile TOWR;
+} gptimer_t;
+
+/**
+ * Expandable configuration object
+ *
+ * Default values:
+ *
+ * ticks_in_millis;				//-1 = default = not defined
+ */
+typedef struct _gp_timer_config_t {
+	int ticks_in_millis;
+} gptimer_config_t;
+
+
 void gptimer_handler(void);
 
 /* ************************* *
@@ -111,25 +148,3 @@ void gptimer_pwm_init(gptimer_t* const timer, gptimer_pwm_config_t* const config
 void gptimer_pwm_start(gptimer_t* const timer);
 
 #endif /* OMAP3530_TIMER_H_ */
-
-/*
- * Quotes from OMAP35x.pf
- *
- * 1-ms Tick Generation (Only GPTIMER1, GPTIMER2, and GPTIMER10)
- *
- * Because the timer input clock is 32,768 Hz, the interrupt period is not exactly 1 ms.
- *
- * The values of the GPTi.TPIR and GPTi.TNIR registers are calculated using the following formula:
- * - Positive increment value = ( (INTEGER[ Fclk * Ttick] + 1) * 1e6) - (Fclk * Ttick * 1e6)
- * - Negative increment value = (INTEGER[ Fclk * Ttick] * 1e6) - (Fclk * Ttick * 1e6)
- *
- * NOTE:
- * Fclk clock frequency (kHz)
- * Ttick tick period (ms)
- *
- * For 1-ms tick with a 32,768-Hz clock:
- * - GPTi.TPIR[31:0] POSITIVE_INC_VALUE = 232000
- * - GPTi.TNIR[31:0] NEGATIVE_INC_VALUE = -768000
- * - GPTi.TLDR[31:0] LOAD_VALUE = 0xFFFFFFE0
- *
- */

@@ -5,9 +5,10 @@
 #include <inttypes.h>
 #include "service/logger/logger.h"
 #include "hal/generic/timer/gptimer.h"
+#include "hal/generic/mpu_subsystem/intcps.h"
 #include "kernel/process.h"
 #include "kernel/process_manager.h"
-#include "hal/omap3530/timer/gptimer.h"
+
 
 #pragma SWI_ALIAS(make_swi, 47);
 void make_swi(unsigned int foo, char* bar);
@@ -87,6 +88,9 @@ interrupt void dabt_handler() {
 ProcessManager_t processManager;
 ProcessId_t currentProcessId;
 gptimer_t main_timer;
+gptimer_t pwm_timer1;
+gptimer_t pwm_timer2;
+gptimer_t pwm_timer3;
 
 #define LED0_PIN			(1 << 21)
 #define LED1_PIN			(1 << 22)
@@ -131,6 +135,8 @@ void turnoff_rgb(void) {
 	*(GPIO5_DATAOUT) &= ~rgb;
 }
 
+void do_pwm(void);
+
 void main(void) {
 	logger_init();
 	logger_debug("\r\n\r\nSystem init...");
@@ -157,23 +163,26 @@ void main(void) {
 	idle_process.func = &idle_task;
 	process_manager_add_process(&processManager, &idle_process);
 
-	/* activate the specific interrupt (interrupt mask) */
-	unsigned int* mpuintc_mir_clearn_1 = (unsigned int*) (0x48200000 + 0x88
-			+ ((38 / 32) * 0x20));
-	unsigned int gp2_irq = (1 << (38 % 32));
-	*(mpuintc_mir_clearn_1) = gp2_irq;
+	//get schedule timer
+	gptimer_get_schedule_timer(&main_timer);
+	//activate the timer in intcps module
+	intcps_activate_gptimer(&main_timer);
 
-	main_timer = gptimer_get(2);
-	gptimer_config_t gptimer_conf;
-	gptimer_conf.ticks_in_millis = 1;
-	gptimer_init_ms(&main_timer, &gptimer_conf);
+	gptimer_config_t conf = gptimer_get_default_timer_init_config();
+	gptimer_init(&main_timer, &conf);
 	gptimer_start(&main_timer);
 
+	//do_pwm();
+
+	processManager.currentProcessId = idle_process.pid;
+	idle_task();
+}
+void do_pwm() {
 	/* start PWM */
 	gptimer_pwm_setup();
-	gptimer_t pwm_timer1 = gptimer_pwm_get(PWM_GPTIMER9);
-	gptimer_t pwm_timer2 = gptimer_pwm_get(PWM_GPTIMER10);
-	gptimer_t pwm_timer3 = gptimer_pwm_get(PWM_GPTIMER11);
+	gptimer_get_pwm_timer(1, &pwm_timer1);
+	gptimer_get_pwm_timer(2, &pwm_timer2);
+	gptimer_get_pwm_timer(3, &pwm_timer3);
 
 	gptimer_pwm_clear(&pwm_timer1);
 	gptimer_pwm_clear(&pwm_timer2);
@@ -194,6 +203,5 @@ void main(void) {
 	gptimer_pwm_clear(&pwm_timer2);
 	gptimer_pwm_clear(&pwm_timer3);
 
-	processManager.currentProcessId = idle_process.pid;
-	idle_task();
 }
+

@@ -11,57 +11,84 @@
 #include "../../generic/timer/gptimer.h"	// we may want to remove this. "gptimer.h" now includes the generic gptimer.h
 
 // implicit functions
-static gptimer_t gptimer_generic_get(int timer_nr, unsigned int* timer_base_address);
 static unsigned int gptimer_pwm_calc_resolution(int pwm_frequency, int clock_frequency);
 static void pwm_config_timer(gptimer_t* timer, unsigned int resolution, float duty_cycle);
+static void gptimer_get(int timer_nr, gptimer_t* timer);
 
-gptimer_t gptimer_get(int timer_nr) {
-	return gptimer_generic_get(timer_nr, 0x0);
-}
+/*
+* @param timer_nr	- 	the timer number
+* @param timer 		- 	timer object afterwards contains all hardware specific registers of the requested timer
+* 						or timer is set to NULL on failure
+*/
+void gptimer_get(int timer_nr, gptimer_t* timer) {
+	unsigned int* timer_base_address = 0x0;
 
-/**
- * Generic way to set the timer_base_address as offset.
- */
-static gptimer_t gptimer_generic_get(int timer_nr, unsigned int* timer_base_address) {
+	//set up timer specific stuff
 	switch(timer_nr) {
-		case 1 : timer_base_address = (unsigned int*) GPTIMER1; break;
-		case 2 : timer_base_address = (unsigned int*) GPTIMER2; break;
-		case 3 : timer_base_address = (unsigned int*) GPTIMER3; break;
-		case 4 : timer_base_address = (unsigned int*) GPTIMER4; break;
-		case 5 : timer_base_address = (unsigned int*) GPTIMER5; break;
-		case 6 : timer_base_address = (unsigned int*) GPTIMER6; break;
-		case 7 : timer_base_address = (unsigned int*) GPTIMER7; break;
-		case 8 : timer_base_address = (unsigned int*) GPTIMER8; break;
-		case 9 : timer_base_address = (unsigned int*) GPTIMER9; break;
-		case 10: timer_base_address = (unsigned int*) GPTIMER10; break;
-		case 11: timer_base_address = (unsigned int*) GPTIMER11; break;
-		default: logger_error("Timer number %u in gptimer_get not supported!", timer_nr);
+		case 1 : 	timer_base_address = GPTIMER1;
+					timer->intcps_mapping_id = GPTIMER1_INTCPS_MAPPING_ID; break;
+		case 2 : 	timer_base_address = GPTIMER2;
+					timer->intcps_mapping_id = GPTIMER2_INTCPS_MAPPING_ID; break;
+		case 3 : 	timer_base_address = GPTIMER3;
+					timer->intcps_mapping_id = GPTIMER3_INTCPS_MAPPING_ID; break;
+		case 4 : 	timer_base_address = GPTIMER4;
+					timer->intcps_mapping_id = GPTIMER4_INTCPS_MAPPING_ID; break;
+		case 5 : 	timer_base_address = GPTIMER5;
+					timer->intcps_mapping_id = GPTIMER5_INTCPS_MAPPING_ID; break;
+		case 6 : 	timer_base_address = GPTIMER6;
+					timer->intcps_mapping_id = GPTIMER6_INTCPS_MAPPING_ID; break;
+		case 7 : 	timer_base_address = GPTIMER7;
+					timer->intcps_mapping_id = GPTIMER7_INTCPS_MAPPING_ID; break;
+		case 8 : 	timer_base_address = GPTIMER8;
+					timer->intcps_mapping_id = GPTIMER8_INTCPS_MAPPING_ID; break;
+		case 9 : 	timer_base_address = GPTIMER9;
+					timer->intcps_mapping_id = GPTIMER9_INTCPS_MAPPING_ID; break;
+		case 10: 	timer_base_address = GPTIMER10;
+					timer->intcps_mapping_id = GPTIMER10_INTCPS_MAPPING_ID; break;
+		case 11: 	timer_base_address = GPTIMER11;
+					timer->intcps_mapping_id = GPTIMER11_INTCPS_MAPPING_ID; break;
+		default: {
+			logger_error("Timer number %u in gptimer_get not supported!", timer_nr);
+			timer = NULL;
+		}
 	}
 
-	gptimer_t timer;
-	timer.TIDR = timer_base_address + GPTIMER_BASE_OFFSET_TIDR;
-	timer.TIOCP_CFG = timer_base_address + GPTIMER_BASE_OFFSET_TIOCP_CFG;
-	timer.TISTAT = timer_base_address + GPTIMER_BASE_OFFSET_TISTAT;
-	timer.TISR = timer_base_address + GPTIMER_BASE_OFFSET_TISR;
-	timer.TIER = timer_base_address + GPTIMER_BASE_OFFSET_TIER;
-	timer.TWER = timer_base_address + GPTIMER_BASE_OFFSET_TWER;
-	timer.TCLR = timer_base_address + GPTIMER_BASE_OFFSET_TCLR;
-	timer.TCRR = timer_base_address + GPTIMER_BASE_OFFSET_TCRR;
-	timer.TLDR = timer_base_address + GPTIMER_BASE_OFFSET_TLDR;
-	timer.TTGR = timer_base_address + GPTIMER_BASE_OFFSET_TTGR;
-	timer.TWPS = timer_base_address + GPTIMER_BASE_OFFSET_TWPS;
-	timer.TMAR = timer_base_address + GPTIMER_BASE_OFFSET_TMAR;
-	timer.TCAR1 = timer_base_address + GPTIMER_BASE_OFFSET_TCAR1;
-	timer.TSICR = timer_base_address + GPTIMER_BASE_OFFSET_TSICR;
-	timer.TCAR2 = timer_base_address + GPTIMER_BASE_OFFSET_TCAR2;
-	timer.TPIR = timer_base_address + GPTIMER_BASE_OFFSET_TPIR;
-	timer.TNIR = timer_base_address + GPTIMER_BASE_OFFSET_TNIR;
-	timer.TCVR = timer_base_address + GPTIMER_BASE_OFFSET_TCVR;
-	timer.TOCR = timer_base_address + GPTIMER_BASE_OFFSET_TOCR;
-	timer.TOWR = timer_base_address + GPTIMER_BASE_OFFSET_TOWR;
-	return timer;
+	if(timer) {
+		//set up common stuff
+		timer->TIDR = timer_base_address + GPTIMER_BASE_OFFSET_TIDR;
+		timer->TIOCP_CFG = timer_base_address + GPTIMER_BASE_OFFSET_TIOCP_CFG;
+		timer->TISTAT = timer_base_address + GPTIMER_BASE_OFFSET_TISTAT;
+		timer->TISR = timer_base_address + GPTIMER_BASE_OFFSET_TISR;
+		timer->TIER = timer_base_address + GPTIMER_BASE_OFFSET_TIER;
+		timer->TWER = timer_base_address + GPTIMER_BASE_OFFSET_TWER;
+		timer->TCLR = timer_base_address + GPTIMER_BASE_OFFSET_TCLR;
+		timer->TCRR = timer_base_address + GPTIMER_BASE_OFFSET_TCRR;
+		timer->TLDR = timer_base_address + GPTIMER_BASE_OFFSET_TLDR;
+		timer->TTGR = timer_base_address + GPTIMER_BASE_OFFSET_TTGR;
+		timer->TWPS = timer_base_address + GPTIMER_BASE_OFFSET_TWPS;
+		timer->TMAR = timer_base_address + GPTIMER_BASE_OFFSET_TMAR;
+		timer->TCAR1 = timer_base_address + GPTIMER_BASE_OFFSET_TCAR1;
+		timer->TSICR = timer_base_address + GPTIMER_BASE_OFFSET_TSICR;
+		timer->TCAR2 = timer_base_address + GPTIMER_BASE_OFFSET_TCAR2;
+		timer->TPIR = timer_base_address + GPTIMER_BASE_OFFSET_TPIR;
+		timer->TNIR = (int *) timer_base_address + GPTIMER_BASE_OFFSET_TNIR;
+		timer->TCVR = timer_base_address + GPTIMER_BASE_OFFSET_TCVR;
+		timer->TOCR = timer_base_address + GPTIMER_BASE_OFFSET_TOCR;
+		timer->TOWR = timer_base_address + GPTIMER_BASE_OFFSET_TOWR;
+	}
 }
-void gptimer_init_ms(gptimer_t* const timer, const gptimer_config_t* const config) {
+
+void gptimer_get_schedule_timer(gptimer_t* schedule_timer) {
+	gptimer_get(2, schedule_timer);
+}
+
+gptimer_config_t gptimer_get_default_timer_init_config(void) {
+	gptimer_config_t default_conf = { -1 };
+	return default_conf;
+}
+
+
+void gptimer_init(gptimer_t* const timer, const gptimer_config_t* const config) {
 
 	/* disable all interrupt events */
 	*(timer->TIER) &= 0x0;
@@ -69,7 +96,7 @@ void gptimer_init_ms(gptimer_t* const timer, const gptimer_config_t* const confi
 	/* stop the timer if running already */
 	*(timer->TCLR) &= ~0x1;
 
-	clear_pending_interrupts(timer);
+	gptimer_clear_pending_interrupts(timer);
 
 	//TODO: use "ticks_in_millis" within configuration object to set up specific tick interval with formula on page 2625 in OMAP35x.pdf
 
@@ -102,7 +129,6 @@ void gptimer_start(gptimer_t* const timer) {
 }
 
 /* TODO: remove after setting up callback handlers for timer */
-#include "../../../service/logger/logger.h"
 #include "../../../kernel/process_manager.h"
 extern gptimer_t main_timer;
 extern unsigned int currentProcessId;
@@ -121,11 +147,11 @@ void gptimer_handler(void) {
 	}
 
 	/* clear all pending interrupts */
-	clear_pending_interrupts(&main_timer);
+	gptimer_clear_pending_interrupts(&main_timer);
 	*((unsigned int*)0x48200048) = 0x1; /* INTCPS_CONTROL s. 1083 */
 }
 
-void clear_pending_interrupts(gptimer_t* const timer) {
+void gptimer_clear_pending_interrupts(gptimer_t* const timer) {
 	*(timer->TISR) = (GPTIMER_TISR_CAPTURE_FLAG
 			| GPTIMER_TISR_MATCH_FLAG | GPTIMER_TISR_OVERFLOW_FLAG);
 }
@@ -162,13 +188,16 @@ void gptimer_pwm_setup() {
 	*(CM_CLKSEL_PER) |= BIT7;
 }
 
-gptimer_t gptimer_pwm_get(int timer_nr) {
-	if (timer_nr < PWM_GPTIMER8 || timer_nr > PWM_GPTIMER11) {
-		logger_warn("gptimer: gptimer_pwm_get(): attempted to get an invalid timer... abort.");
+void gptimer_get_pwm_timer(int id, gptimer_t* timer) {
+	switch(id) {
+		case 1: id = 9; break;
+		case 2: id = 10; break;
+		case 3: id = 11; break;
+		default: id = -1;
 	}
-
-	return gptimer_get(timer_nr);
+	gptimer_get(id, timer);
 }
+
 
 void gptimer_pwm_clear(gptimer_t* const timer) {
 	*(timer->TCLR) = 0;
