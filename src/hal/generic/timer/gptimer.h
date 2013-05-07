@@ -45,8 +45,6 @@ void gptimer_init(gptimer_t* const timer, const gptimer_config_t* const config);
 
 void gptimer_start(gptimer_t* const timer);
 
-void gptimer_clear_pending_interrupts(gptimer_t* const timer);
-
 /**
  * Returns the configuration object with the default values which can be used for timer initialization.
  * Retrieve the configuration and modify it as desired.

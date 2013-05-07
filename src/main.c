@@ -165,6 +165,7 @@ void main(void) {
 
 	//get schedule timer
 	gptimer_get_schedule_timer(&main_timer);
+	//gptimer_get_pwm_timer(1, &main_timer);
 	//activate the timer in intcps module
 	intcps_activate_gptimer(&main_timer);
 

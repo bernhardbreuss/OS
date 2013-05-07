@@ -7,13 +7,14 @@
 
 #include <stdlib.h>
 #include "gptimer.h"
+#include "prcm.h"
 #include "../../../service/logger/logger.h"
-#include "../../generic/timer/gptimer.h"	// we may want to remove this. "gptimer.h" now includes the generic gptimer.h
 
 // implicit functions
 static unsigned int gptimer_pwm_calc_resolution(int pwm_frequency, int clock_frequency);
 static void pwm_config_timer(gptimer_t* timer, unsigned int resolution, float duty_cycle);
 static void gptimer_get(int timer_nr, gptimer_t* timer);
+static void gptimer_clear_pending_interrupts(gptimer_t* const timer);
 
 /*
 * @param timer_nr	- 	the timer number
@@ -22,13 +23,16 @@ static void gptimer_get(int timer_nr, gptimer_t* timer);
 */
 void gptimer_get(int timer_nr, gptimer_t* timer) {
 	unsigned int* timer_base_address = 0x0;
+	unsigned int* volatile cm_clksel_per = PRCM_CM_CLKSEL_PER;
 
 	//set up timer specific stuff
 	switch(timer_nr) {
 		case 1 : 	timer_base_address = GPTIMER1;
 					timer->intcps_mapping_id = GPTIMER1_INTCPS_MAPPING_ID; break;
 		case 2 : 	timer_base_address = GPTIMER2;
-					timer->intcps_mapping_id = GPTIMER2_INTCPS_MAPPING_ID; break;
+					timer->intcps_mapping_id = GPTIMER2_INTCPS_MAPPING_ID;
+					*(cm_clksel_per) |= ~BIT0;	//set to 32 kHz clock
+					break;
 		case 3 : 	timer_base_address = GPTIMER3;
 					timer->intcps_mapping_id = GPTIMER3_INTCPS_MAPPING_ID; break;
 		case 4 : 	timer_base_address = GPTIMER4;
@@ -90,6 +94,9 @@ gptimer_config_t gptimer_get_default_timer_init_config(void) {
 
 void gptimer_init(gptimer_t* const timer, const gptimer_config_t* const config) {
 
+	int pos_inc = ((((int)(32.768))+1)*1000000)-(32.768*1000000);
+	int neg_inc = (((int)(32.768))*1000000)-(32.768*1000000);
+
 	/* disable all interrupt events */
 	*(timer->TIER) &= 0x0;
 
@@ -98,23 +105,17 @@ void gptimer_init(gptimer_t* const timer, const gptimer_config_t* const config) 
 
 	gptimer_clear_pending_interrupts(timer);
 
-	//TODO: use "ticks_in_millis" within configuration object to set up specific tick interval with formula on page 2625 in OMAP35x.pdf
-
-	/* set timer to 1 ms */
-	*(timer->TPIR) = 232000; /* OMAP35x.pdf Page 2625 */
-
-	//TODO: remove the warning
-	*(timer->TNIR) = -768000;
+	/* set timer to 1 ms - OMAP35x.pdf Page 2625 */
+	*(timer->TPIR) = pos_inc;
+	*(timer->TNIR) = neg_inc;
 	*(timer->TLDR) = 0xFFFFFFE0;
 	*(timer->TCRR) = 0xFFFFFFE0;
 
 	/* set timer overflow match */
 	*(timer->TOCR) = 0x0;
-	*(timer->TOWR) = 0x18D; /* TODO: Muss noch mit clock source getestet werde, jetzt 1ms */
+	*(timer->TOWR) = 0x18D;
 
-	/* TODO: set clock source
-	 * OMAP35x.pdf, page 305.
-	 * Sync timer OMAP35x.pdf, page 2678 */
+	/* TODO: Muss noch mit clock source getestet werde, jetzt 1ms */
 
 	*(timer->TCLR) |= (GPTIMER_TCLR_COMPARE_ENABLE | GPTIMER_TCLR_AUTORELOAD_MODE
 			| GPTIMER_TCLR_TRIGER_OVERFLOW_MATCH);
