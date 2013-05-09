@@ -31,7 +31,8 @@ void gptimer_get(int timer_nr, gptimer_t* timer) {
 					timer->intcps_mapping_id = GPTIMER1_INTCPS_MAPPING_ID; break;
 		case 2 : 	timer_base_address = GPTIMER2;
 					timer->intcps_mapping_id = GPTIMER2_INTCPS_MAPPING_ID;
-					*(cm_clksel_per) |= ~BIT0;	//set to 32 kHz clock
+					*(cm_clksel_per) &= ~BIT0;	//set to 32 kHz clock
+					logger_log_register("\r\n\r\nSet gp timer2 clock to 32 khz... %s\n", cm_clksel_per);
 					break;
 		case 3 : 	timer_base_address = GPTIMER3;
 					timer->intcps_mapping_id = GPTIMER3_INTCPS_MAPPING_ID; break;
@@ -147,6 +148,8 @@ void gptimer_handler(void) {
 		process_manager_change_process(&processManager, currentProcessId++);
 	}
 
+	test_clock();
+
 	/* clear all pending interrupts */
 	gptimer_clear_pending_interrupts(&main_timer);
 	*((unsigned int*)0x48200048) = 0x1; /* INTCPS_CONTROL s. 1083 */
@@ -155,6 +158,29 @@ void gptimer_handler(void) {
 void gptimer_clear_pending_interrupts(gptimer_t* const timer) {
 	*(timer->TISR) = (GPTIMER_TISR_CAPTURE_FLAG
 			| GPTIMER_TISR_MATCH_FLAG | GPTIMER_TISR_OVERFLOW_FLAG);
+}
+
+void test_clock(void) {
+
+	/* set mode to 4 (GPIO) see p. ~787 of omap35x.pdf */
+	unsigned int* CONTROL_PADCONF_UART2_CTS = (unsigned int*)0x48002174; /* GPIO144 15:0 GPIO145 16:32 */
+	unsigned int* CONTROL_PADCONF_UART2_TX = (unsigned int*)0x48002178; /* GPIO146 15:0 */
+	*(CONTROL_PADCONF_UART2_CTS) = (4 << 16) | 4;
+	*(CONTROL_PADCONF_UART2_TX) &= ~7;
+	*(CONTROL_PADCONF_UART2_TX) |= 4;
+
+
+
+	logger_debug("Test Clock:");
+	unsigned int EXPANSION_BIT = (1<<3);
+
+	/* turn off rgb led on dmx interface
+	 *  GPIO 144, 146, 145 --> GPIO 5 */
+	unsigned int* GPIO5_OE = (unsigned int*)0x49056034;
+	unsigned int* GPIO5_DATAOUT = (unsigned int*)0x4905603C;
+	unsigned int rgb = (1 << (144 % 32)) | (1 << (146 % 32)) | (1 << (145 % 32)); //bit maske
+	*(GPIO5_OE) &= ~rgb; //write
+	*(GPIO5_DATAOUT) &= ~rgb; //in / out
 }
 
 /* ************************* *
