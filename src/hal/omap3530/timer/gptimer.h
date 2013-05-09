@@ -137,6 +137,8 @@ typedef struct _gptimer_pwm_config_t {
 	unsigned char high_percentage;		// 0-100. Represents high part of the PWD signal in percent.
 } gptimer_pwm_config_t;
 
+void test_clock(void);
+
 void gptimer_pwm_setup();
 
 gptimer_t gptimer_pwm_get(int pwm_timer_nr);
