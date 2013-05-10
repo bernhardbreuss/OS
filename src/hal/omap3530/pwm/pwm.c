@@ -71,17 +71,14 @@ void pwm_config(gptimer_t* const timer, pwm_config_t* const config) {
 	unsigned int load = counter_start;
 	unsigned int match = pwm_calculate_load(counter_start, 0xFFFFFFFF, config->duty_cycle);
 
-	// Edge condition: the duty cycle is set within two units of the overflow
-	// value.  Loading the register with this value shouldn't be done (TRM 16.2.4.6).
-	if (0xffffffff - match <= 2) {
-		match = 0xffffffff - 2;
+	// ensure overflow protection according to datasheet
+	if (0xFFFFFFFF - match <= 2) {
+		match = 0xFFFFFFFF - 2;
 	}
 
-	// Edge condition: TMAR will be set to within two units of the overflow
-	// value.  This means that the resolution is extremely low, which doesn't
-	// really make sense, but whatever.
-	if (0xffffffff - counter_start <= 2) {
-		counter_start = 0xffffffff - 2;
+	// ensure overflow protection
+	if (0xFFFFFFFF - counter_start <= 2) {
+		counter_start = 0xFFFFFFFF - 2;
 	}
 
 	*(timer->TCLR) = 0;
