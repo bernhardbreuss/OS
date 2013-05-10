@@ -5,9 +5,11 @@
 #include <inttypes.h>
 #include "service/logger/logger.h"
 #include "hal/generic/timer/gptimer.h"
+#include "hal/generic/pwm/pwm.h"
 #include "hal/generic/mpu_subsystem/intcps.h"
 #include "kernel/process.h"
 #include "kernel/process_manager.h"
+#include "tests/pwm_test.h"
 
 
 #pragma SWI_ALIAS(make_swi, 47);
@@ -75,7 +77,7 @@ interrupt void swi_handler(unsigned int foo, char* bar) {
 interrupt void pabt_handler() {
 	int i = 0;
 	i += 2;
-	logger_error("KERNLE PANIC: Prefetch abort.");
+	logger_error("KERNEL PANIC: Prefetch abort.");
 }
 
 #pragma INTERRUPT(dabt_handler, DABT);
@@ -88,9 +90,6 @@ interrupt void dabt_handler() {
 ProcessManager_t processManager;
 ProcessId_t currentProcessId;
 gptimer_t main_timer;
-gptimer_t pwm_timer1;
-gptimer_t pwm_timer2;
-gptimer_t pwm_timer3;
 
 #define LED0_PIN			(1 << 21)
 #define LED1_PIN			(1 << 22)
@@ -148,61 +147,36 @@ void main(void) {
 	#define GPIO5_DIR  			(unsigned int*) 0x49056094
 	*(GPIO5_DIR) |= LED0_PIN | LED1_PIN;
 
-	process_manager_init(&processManager);
+//	process_manager_init(&processManager);
 
-	Process_t process1;
-	process1.func = &led0;
-	currentProcessId = process_manager_add_process(&processManager, &process1);
-
-	Process_t process2;
-	process2.func = &led1;
-	process_manager_add_process(&processManager, &process2);
+//	Process_t process1;
+//	process1.func = &led0;
+//	currentProcessId = process_manager_add_process(&processManager, &process1);
+//
+//	Process_t process2;
+//	process2.func = &led1;
+//	process_manager_add_process(&processManager, &process2);
 
 	/* idle task */
-	Process_t idle_process;
-	idle_process.func = &idle_task;
-	process_manager_add_process(&processManager, &idle_process);
+//	Process_t idle_process;
+//	idle_process.func = &idle_task;
+//	process_manager_add_process(&processManager, &idle_process);
+//
+//	//get schedule timer
+//	gptimer_get_schedule_timer(&main_timer);
+//	//gptimer_get_pwm_timer(1, &main_timer);
+//	//activate the timer in intcps module
+//	intcps_activate_gptimer(&main_timer);
+//
+//	gptimer_config_t conf = gptimer_get_default_timer_init_config();
+//	gptimer_init(&main_timer, &conf);
+//	gptimer_start(&main_timer);
 
-	//get schedule timer
-	gptimer_get_schedule_timer(&main_timer);
-	//gptimer_get_pwm_timer(1, &main_timer);
-	//activate the timer in intcps module
-	intcps_activate_gptimer(&main_timer);
+	int i = 0;
+	while (++i < 1000) {
+		do_pwm();
+	}
 
-	gptimer_config_t conf = gptimer_get_default_timer_init_config();
-	gptimer_init(&main_timer, &conf);
-	gptimer_start(&main_timer);
-
-	//do_pwm();
-
-	processManager.currentProcessId = idle_process.pid;
+//	processManager.currentProcessId = idle_process.pid;
 	idle_task();
 }
-void do_pwm() {
-	/* start PWM */
-	gptimer_pwm_setup();
-	gptimer_get_pwm_timer(1, &pwm_timer1);
-	gptimer_get_pwm_timer(2, &pwm_timer2);
-	gptimer_get_pwm_timer(3, &pwm_timer3);
-
-	gptimer_pwm_clear(&pwm_timer1);
-	gptimer_pwm_clear(&pwm_timer2);
-	gptimer_pwm_clear(&pwm_timer3);
-
-	gptimer_pwm_config_t pwm_config;
-//	pwm_config.PT = PWM_PT_TOGGLE;
-//	pwm_config.SCPWM = PWM_SCPWM_DEFAULT_HIGH;
-//	pwm_config.TRG = PWM_TRG_OVERFLOW_AND_MATCH;
-	pwm_config.high_percentage = 50;
-	pwm_config.timer_config->ticks_in_millis = 1;
-
-	gptimer_pwm_init(&pwm_timer1, &pwm_config);
-	gptimer_pwm_init(&pwm_timer2, &pwm_config);
-	gptimer_pwm_init(&pwm_timer3, &pwm_config);
-
-	gptimer_pwm_clear(&pwm_timer1);
-	gptimer_pwm_clear(&pwm_timer2);
-	gptimer_pwm_clear(&pwm_timer3);
-
-}
-
