@@ -25,7 +25,8 @@ void gptimer_get(int timer_nr, gptimer_t* timer) {
 					timer->intcps_mapping_id = GPTIMER1_INTCPS_MAPPING_ID; break;
 		case 2 : 	timer_base_address = GPTIMER2;
 					timer->intcps_mapping_id = GPTIMER2_INTCPS_MAPPING_ID;
-					*(cm_clksel_per) |= ~BIT0;	//set to 32 kHz clock
+					*(cm_clksel_per) &= ~BIT0;	//set to 32 kHz clock
+					logger_log_register("\r\n\r\nSet gp timer2 clock to 32 khz... %s\n", cm_clksel_per);
 					break;
 		case 3 : 	timer_base_address = GPTIMER3;
 					timer->intcps_mapping_id = GPTIMER3_INTCPS_MAPPING_ID; break;
@@ -154,5 +155,3 @@ void gptimer_clear_pending_interrupts(gptimer_t* const timer) {
 	*(timer->TISR) = (GPTIMER_TISR_CAPTURE_FLAG
 			| GPTIMER_TISR_MATCH_FLAG | GPTIMER_TISR_OVERFLOW_FLAG);
 }
-
-
