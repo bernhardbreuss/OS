@@ -10,8 +10,6 @@
 
 #include "../process.h"
 
-extern void* irq_saved_context[PROCESS_CONTEXT_SIZE];
-
 #pragma INTERRUPT(irq_handler, IRQ);
 #pragma TASK(irq_handler)
 interrupt void irq_handler();

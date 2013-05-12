@@ -1,5 +1,5 @@
 /*
- * process_context.h
+ * process.h
  *
  *  Created on: May 2, 2013
  *      Author: Bernhard
@@ -9,6 +9,6 @@
 #define OMAP3530_PROCESS_H_
 
 #define PROCESS_STACK_SIZE 128000 /* 128kb */
-#define PROCESS_CONTEXT_SIZE 16
+#define PROCESS_CONTEXT_SIZE 17
 
 #endif /* OMAP3530_PROCESS_H_ */

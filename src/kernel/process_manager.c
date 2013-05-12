@@ -8,33 +8,32 @@
 #include <stdlib.h>
 #include <string.h>
 #include "process_manager.h"
-#include "../hal/generic/irq/irq.h"
 #include "../hal/platform.h"
+#include "../hal/generic/process_context/process_context.h"
+
+static ProcessId_t currentProcessId;
+Process_t* prozessSlots[MAX_PROCESSES]; /* TODO: rename to english process */
+
+void* process_context_pointer;
 
 void process_manager_store_context(unsigned int*);
 void process_manager_load_context(unsigned int*);
 
-void process_manager_init(ProcessManager_t *processManager) {
+void process_manager_init() {
 	int i;
 	for(i = 0; i < MAX_PROCESSES; i++) {
-		processManager->prozessSlots[i] = NULL;
+		prozessSlots[i] = NULL;
 	}
 }
-ProcessId_t process_manager_add_process(ProcessManager_t *processManager, Process_t *theProcess) {
+ProcessId_t process_manager_add_process(Process_t *theProcess) {
 	int i;
 	for (i = 0; i < MAX_PROCESSES; i++) {
-		if (processManager->prozessSlots[i] == NULL) {
-			int* stack = malloc(PROCESS_STACK_SIZE);
-			if (stack != NULL) {
-				memset(stack, 0, PROCESS_STACK_SIZE);
-				memset(theProcess->saved_context, 0, sizeof(theProcess->saved_context));
-
+		if (prozessSlots[i] == NULL) {
+			if (process_context_init(theProcess)) {
 				theProcess->pid = i;
-				theProcess->state = READY;
-				theProcess->saved_context[0] = theProcess->func;
-				theProcess->saved_context[1] = stack + (PROCESS_STACK_SIZE / sizeof(int*));
+				theProcess->state = PROCESS_READY;
 
-				processManager->prozessSlots[i] = theProcess;
+				prozessSlots[i] = theProcess;
 				return i;
 			} else {
 				break;
@@ -45,15 +44,65 @@ ProcessId_t process_manager_add_process(ProcessManager_t *processManager, Proces
 	return INVALID_PROCESS_ID;
 }
 
-void process_manager_change_process(ProcessManager_t *processManager, ProcessId_t processId) {
-	Process_t* oldProcess = processManager->prozessSlots[processManager->currentProcessId];
-	Process_t* newProcess = processManager->prozessSlots[processId];
-
-	int i;
-	for (i = 0; i < PROCESS_CONTEXT_SIZE; i++) {
-		oldProcess->saved_context[i] = irq_saved_context[i];
-		irq_saved_context[i] = newProcess->saved_context[i];
+void process_manager_change_process(ProcessId_t processId) {
+	Process_t* p = prozessSlots[currentProcessId];
+	if (p != NULL && p->state == PROCESS_RUNNING) {
+		p->state = PROCESS_READY;
 	}
 
-	processManager->currentProcessId = processId;
+	p = prozessSlots[processId];
+
+	process_context_pointer = p->saved_context;
+	p->state = PROCESS_RUNNING;
+	currentProcessId = processId;
+
+	logger_debug("Current process: #%u %s", p->pid, p->name);
+}
+
+ProcessId_t process_manager_get_process(process_name_t processName) {
+	int i;
+	for (i = 0; i < MAX_PROCESSES; i++) {
+		if (prozessSlots[i]->pid != NULL) {
+			if (strcmp(prozessSlots[i]->name, processName) == 0) {
+				return prozessSlots[i]->pid;
+			}
+		}
+	}
+
+	return INVALID_PROCESS_ID;
+}
+
+uint32_t process_manager_start_managing(ProcessId_t idleProcessId) {
+	process_manager_change_process(idleProcessId);
+	return 0; /* TODO: ... */
+}
+
+Process_t* process_manager_get_current_process() {
+	return prozessSlots[currentProcessId];
+}
+
+Process_t* process_manager_get_process_byid(ProcessId_t id) {
+	if (id > sizeof(prozessSlots) || id == INVALID_PROCESS_ID) {
+		return NULL;
+	}
+
+	return prozessSlots[id];
+}
+
+#pragma TASK(process_manager_block_current_process_c);
+void process_manager_block_current_process_c(void) {
+	prozessSlots[currentProcessId]->state = PROCESS_BLOCKED;
+
+	int i;
+	for (i = 0; i < MAX_PROCESSES; i++) {
+		Process_t* p = prozessSlots[i];
+		if (p != NULL && p->state == PROCESS_READY) {
+			currentProcessId = p->pid;
+			break;
+		}
+	}
+
+	process_manager_change_process(currentProcessId);
+	asm("\t SWI #0x2"); /* process_context_load */
+	/* TODO: blocking process should be possible with one SWI */
 }

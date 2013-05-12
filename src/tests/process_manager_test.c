@@ -5,11 +5,12 @@
  *      Author: edi
  */
 #include <stdlib.h>
+#include <inttypes.h>
 #include "../kernel/process_manager.h"
 #include "../kernel/process.h"
 #include "process_manager_test.h"
 
-int foo(void) {
+uint32_t foo(void) {
 	return 0;
 }
 
@@ -19,22 +20,21 @@ int test_process_manager_1(void) {
 	int max_processes_plus_one = (MAX_PROCESSES + 1);
 	Process_t *processes = malloc(sizeof(Process_t) * max_processes_plus_one);
 	Process_t *firstProcess = processes;
-	ProcessManager_t processManager;
 
 	//last process is to much for the manager
 	for(i = 0; i < max_processes_plus_one; i++) {
 		processes->pid = 1;
 		processes->priority = HIGH;
-		processes->state = READY;
-		processes->func = foo;
+		processes->state = PROCESS_READY;
+		processes->func = &foo;
 		processes->func(); 		//call it for fun
 		processes++;
 	}
 	processes = firstProcess;
-	process_manager_init(&processManager);
+	process_manager_init();
 
 	for(i = 0; i < max_processes_plus_one; i++) {
-		processes->pid = process_manager_add_process(&processManager, processes);
+		processes->pid = process_manager_add_process(processes);
 		processes++;
 	}
 	processes = firstProcess;

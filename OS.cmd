@@ -15,7 +15,7 @@ MEMORY
    INTERRUPT_VECTORS:	ORIGIN = 0x4020FFC8  LENGTH = 0x0000001C
 }
 
-stackSize = 0x2000;
+stackSize = 0x20000;
 
 SECTIONS
 {
@@ -44,7 +44,7 @@ SECTIONS
        stackSupervisor = .;
        . = . + stackSize;
        stackAbort = .;
-       . = . + stackSize;
+       . = . + (4 * stackSize);
        stackSystem = .;
    }
 }

@@ -9,5 +9,6 @@
 #define OMAP3530_PLATFORM_H_
 
 #include "process.h"
+#include "devices.h"
 
 #endif /* OMAP3530_PLATFORM_H_ */

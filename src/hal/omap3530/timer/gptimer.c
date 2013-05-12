@@ -133,22 +133,31 @@ void gptimer_start(gptimer_t* const timer) {
 /* TODO: remove after setting up callback handlers for timer */
 #include "../../../kernel/process_manager.h"
 extern gptimer_t main_timer;
-extern unsigned int currentProcessId;
-extern ProcessManager_t processManager;
+int currentProcessId = -1;
 unsigned volatile int irq_number = 0;
+extern Process_t* prozessSlots[MAX_PROCESSES];
 
 void gptimer_handler(void) {
 	/* TODO: call handler function */
-	if (++irq_number % 3000 == 0) { /* ~3 seconds */
-		currentProcessId = (currentProcessId % 2);
+	if (++irq_number % 8 == 0) { /* ~3 seconds */
+		int i = currentProcessId + 1;
+		Process_t* p;
+		while (i != currentProcessId) {
+			if (i >= MAX_PROCESSES) {
+				i = 0;
+			}
+			p = prozessSlots[i];
+			if (p != NULL && p->state == PROCESS_READY) {
+				currentProcessId = p->pid;
+				logger_error("Interrupt number: %u", irq_number);
+				break;
+			}
 
-		logger_error("Interrupt number: %u", irq_number);
-		logger_debug("Current process = %u", currentProcessId);
+			i++;
+		}
 
-		process_manager_change_process(&processManager, currentProcessId++);
+		process_manager_change_process(currentProcessId);
 	}
-
-	test_clock();
 
 	/* clear all pending interrupts */
 	gptimer_clear_pending_interrupts(&main_timer);
@@ -180,7 +189,7 @@ void test_clock(void) {
 	unsigned int* GPIO5_DATAOUT = (unsigned int*)0x4905603C;
 	unsigned int rgb = (1 << (144 % 32)) | (1 << (146 % 32)) | (1 << (145 % 32)); //bit maske
 	*(GPIO5_OE) &= ~rgb; //write
-	*(GPIO5_DATAOUT) &= ~rgb; //in / out
+	*(GPIO5_DATAOUT) &= ~rgb; //in / out*/
 }
 
 /* ************************* *
