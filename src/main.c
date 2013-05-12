@@ -13,9 +13,6 @@
 #include "kernel/ipc/ipc.h"
 #include "tests/pwm_test.h"
 
-#pragma SWI_ALIAS(make_swi, 47);
-void make_swi(unsigned int foo, char* bar);
-
 #pragma INTERRUPT(udef_handler, UDEF);
 interrupt void udef_handler() {
 	int i = 0;
@@ -114,6 +111,7 @@ void main(void) {
 
 	asm("\t MSR CPSR_c, #0x10");
 	logger_logmode();
+
 	/* init led stuff */
 	turnoff_rgb();
 	#define GPIO5_DIR  			(unsigned int*) 0x49056094
@@ -146,10 +144,11 @@ void main(void) {
 		do_pwm();
 	}*/
 
+	gptimer_get_schedule_timer(&main_timer);
+	intcps_activate_gptimer(&main_timer);
 	gptimer_config_t conf = gptimer_get_default_timer_init_config();
 	gptimer_init(&main_timer, &conf);
 	gptimer_start(&main_timer);
-
 
 	idle_process.func();
 }

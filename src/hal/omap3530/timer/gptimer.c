@@ -110,7 +110,7 @@ void gptimer_init(gptimer_t* const timer, const gptimer_config_t* const config) 
 	*(timer->TOCR) = 0x0;
 	*(timer->TOWR) = 0x18D;
 
-	/* TODO: Muss noch mit clock source getestet werde, jetzt 1ms */
+	/* TODO: Muss noch mit clock source getestet werden, jetzt 1ms */
 
 	*(timer->TCLR) |= (GPTIMER_TCLR_COMPARE_ENABLE | GPTIMER_TCLR_AUTORELOAD_MODE
 			| GPTIMER_TCLR_TRIGER_OVERFLOW_MATCH);

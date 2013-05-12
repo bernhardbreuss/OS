@@ -11,7 +11,7 @@
 #include "../../devices/device.h"
 #include "../../kernel/ipc/ipc.h"
 #include <stdlib.h>
-#include <string.h>
+#include <stdio.h>
 
 
 uint32_t gpio_main(void) {
