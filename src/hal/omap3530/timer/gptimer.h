@@ -112,41 +112,6 @@ typedef struct _gp_timer_config_t {
 
 
 void gptimer_handler(void);
-
-/* ************************* *
- * 			PWM
- * ************************* */
-
-#define PWM_GPTIMER8	8
-#define PWM_GPTIMER9	9
-#define PWM_GPTIMER10	10
-#define PWM_GPTIMER11	11
-
-#define PWM_TRG_OVERFLOW					BIT10
-#define PWM_TRG_OVERFLOW_AND_MATCH			(BIT10 | BIT11)
-
-#define PWM_SCPWM_DEFAULT_HIGH				BIT7
-
-#define PWM_PT_TOGGLE						BIT12
-
-typedef struct _gptimer_pwm_config_t {
-	gptimer_config_t* timer_config;
-	unsigned int volatile TRG;			// set pin to toggle on an event
-	unsigned int volatile PT;			// set pin to toggle on an event
-	unsigned int volatile SCPWM;		// set default value of PWM output. Set or clear the PWM output signal only while the counter is stopped or trigger is off.
-	unsigned char high_percentage;		// 0-100. Represents high part of the PWD signal in percent.
-} gptimer_pwm_config_t;
-
-void test_clock(void);
-
-void gptimer_pwm_setup();
-
-gptimer_t gptimer_pwm_get(int pwm_timer_nr);
-
-void gptimer_pwm_clear(gptimer_t* const timer);
-
-void gptimer_pwm_init(gptimer_t* const timer, gptimer_pwm_config_t* const config);
-
-void gptimer_pwm_start(gptimer_t* const timer);
+void gptimer_clear_pending_interrupts(gptimer_t* const timer);
 
 #endif /* OMAP3530_TIMER_H_ */

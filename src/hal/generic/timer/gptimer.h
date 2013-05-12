@@ -24,16 +24,7 @@
  */
 void gptimer_get_schedule_timer(gptimer_t* schedule_timer);
 
-
-/**
- * Call it to get a PWM timer associated with this id.
- * Other HAL interfaces between HAL and OS will need the initialized timer afterwards
- * on failure timer is set internally to NULL
- *
- * @param id 		- a generic id (call getter again with same id and you will get the same timer object)
- * 					  the id starts by 1 and increments to n (platform specific)
- */
-void gptimer_get_pwm_timer(int id, gptimer_t* pwm_timer);
+void gptimer_get(int timer_nr, gptimer_t* timer);
 
 /**
  * Initialize a timer.
@@ -44,6 +35,8 @@ void gptimer_get_pwm_timer(int id, gptimer_t* pwm_timer);
 void gptimer_init(gptimer_t* const timer, const gptimer_config_t* const config);
 
 void gptimer_start(gptimer_t* const timer);
+
+void gptimer_stop(gptimer_t* const timer);
 
 /**
  * Returns the configuration object with the default values which can be used for timer initialization.
