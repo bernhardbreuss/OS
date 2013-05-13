@@ -134,7 +134,7 @@ void gptimer_stop(gptimer_t* const timer) {
 extern gptimer_t main_timer;
 int currentProcessId = -1;
 unsigned volatile int irq_number = 0;
-extern Process_t* prozessSlots[MAX_PROCESSES];
+extern Process_t* processSlots[MAX_PROCESSES];
 
 void gptimer_handler(void) {
 	/* TODO: call handler function */
@@ -145,7 +145,7 @@ void gptimer_handler(void) {
 			if (i >= MAX_PROCESSES) {
 				i = 0;
 			}
-			p = prozessSlots[i];
+			p = processSlots[i];
 			if (p != NULL && p->state == PROCESS_READY) {
 				currentProcessId = p->pid;
 				logger_error("Interrupt number: %u", irq_number);

@@ -11,9 +11,11 @@
 #include "../../driver/driver_manager.h"
 
 uint32_t ipc_syscall_device(Device_t device, uint8_t call_type, message_t* msg) {
+	//get the process for this driver
+	//the getter starts the process internally if not running currently
 	ProcessId_t process_id = driver_manager_get_process(device);
 	if (process_id != INVALID_PROCESS_ID) {
-		return ipc_syscall(process_id, call_type, msg);
+		return ipc_syscall(process_id, call_type, msg); //send message via software interrupt
 	} else {
 		return IPC_OTHER_NOT_FOUND;
 	}
@@ -25,7 +27,7 @@ void copy_msg(Process_t* src, Process_t* dst) {
 	memcpy(dst->ipc.msg, src->ipc.msg, sizeof(message_t));
 }
 
-extern Process_t* prozessSlots[MAX_PROCESSES]; /* TODO: wouldn't asking the manager be much better? */
+extern Process_t* processSlots[MAX_PROCESSES]; /* TODO: wouldn't asking the manager be much better? */
 uint32_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 	Process_t* src = process_manager_get_current_process();
 	Process_t* dst = NULL;
@@ -77,7 +79,7 @@ uint32_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 				_disable_interrupts(); /* TODO: is this really necessary? */
 				int i;
 				for (i = 0; i < MAX_PROCESSES; i++) {
-					Process_t* p = prozessSlots[i];
+					Process_t* p = processSlots[i];
 					if (p != NULL && p->state == PROCESS_BLOCKED && p->ipc.other == src->pid) {
 						/* found a process which is sending to this process */
 						dst = p;

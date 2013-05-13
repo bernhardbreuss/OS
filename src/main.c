@@ -87,9 +87,13 @@ void turnoff_rgb(void) {
 void do_pwm(void);
 
 uint32_t ipc_process1(void) {
+	//GPIO led 0 toggle via IPC
 	message_t msg;
 	msg.type = MESSAGE_TYPE_DATA;
 	msg.value.data[0] = DEVICE_OPEN;
+	//led0 is accessible over the twenty-first pin on GPIO5
+	//omap3530x.pdf page 3383
+	//BBSRM_latest.pdf page 64
 	msg.value.data[1] = 21;
 	msg.value.data[2] = GPIO_TOGGLE;
 	msg.size = 3;
@@ -97,7 +101,7 @@ uint32_t ipc_process1(void) {
 	int i;
 	while (1) {
 		ipc_syscall_device(GPIO5, IPC_SENDREC, &msg); /* send device GPIO5 something */
-		msg.value.data[0] = DEVICE_WRITE;
+		msg.value.data[0] = DEVICE_WRITE; //device opened already, we want to write data
 		for (i = 0; i < 450000; i++) ;
 	}
 }

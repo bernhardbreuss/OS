@@ -10,12 +10,14 @@
 #include "../../kernel/process_manager.h"
 #include "../../devices/device.h"
 #include "../../kernel/ipc/ipc.h"
+#include "../../service/logger/logger.h"
 #include <stdlib.h>
 #include <stdio.h>
 
 
 uint32_t gpio_main(void) {
 	message_t msg;
+
 	while (1) {
 		if (ipc_syscall(PROCESS_ANY, IPC_RECEIVE, &msg) == IPC_OK) {
 			if (msg.type == MESSAGE_TYPE_DATA) { /* TODO: is msg->type really necessary? */
@@ -40,9 +42,8 @@ uint32_t gpio_main(void) {
 
 			ipc_syscall(msg.source, IPC_SEND, &msg); /* TODO: error handling */
 		} else {
-			logger_error("gpio driver gone");
+			logger_error("GPIO driver gone");
 			while (1) ;
-			break;
 		}
 	}
 
@@ -56,7 +57,7 @@ ProcessId_t gpio_start_driver_process(Device_t device) {
 	gpio_process.state = PROCESS_READY;
 	gpio_process.name = malloc(10);
 	if (gpio_process.name == NULL) {
-		gpio_process.name = "GPIO";
+		gpio_process.name = "GPIO driver";
 	} else {
 		sprintf(gpio_process.name, "GPIO #%u", device);
 	}

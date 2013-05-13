@@ -10,9 +10,10 @@
 #include "process_manager.h"
 #include "../hal/platform.h"
 #include "../hal/generic/process_context/process_context.h"
+#include "../service/logger/logger.h"
 
 static ProcessId_t currentProcessId;
-Process_t* prozessSlots[MAX_PROCESSES]; /* TODO: rename to english process */
+Process_t* processSlots[MAX_PROCESSES]; /* TODO: rename to english process */
 
 void* process_context_pointer;
 
@@ -22,18 +23,18 @@ void process_manager_load_context(unsigned int*);
 void process_manager_init() {
 	int i;
 	for(i = 0; i < MAX_PROCESSES; i++) {
-		prozessSlots[i] = NULL;
+		processSlots[i] = NULL;
 	}
 }
 ProcessId_t process_manager_add_process(Process_t *theProcess) {
 	int i;
 	for (i = 0; i < MAX_PROCESSES; i++) {
-		if (prozessSlots[i] == NULL) {
+		if (processSlots[i] == NULL) {
 			if (process_context_init(theProcess)) {
 				theProcess->pid = i;
 				theProcess->state = PROCESS_READY;
 
-				prozessSlots[i] = theProcess;
+				processSlots[i] = theProcess;
 				return i;
 			} else {
 				break;
@@ -45,12 +46,12 @@ ProcessId_t process_manager_add_process(Process_t *theProcess) {
 }
 
 void process_manager_change_process(ProcessId_t processId) {
-	Process_t* p = prozessSlots[currentProcessId];
+	Process_t* p = processSlots[currentProcessId];
 	if (p != NULL && p->state == PROCESS_RUNNING) {
 		p->state = PROCESS_READY;
 	}
 
-	p = prozessSlots[processId];
+	p = processSlots[processId];
 
 	process_context_pointer = p->saved_context;
 	p->state = PROCESS_RUNNING;
@@ -62,9 +63,9 @@ void process_manager_change_process(ProcessId_t processId) {
 ProcessId_t process_manager_get_process(process_name_t processName) {
 	int i;
 	for (i = 0; i < MAX_PROCESSES; i++) {
-		if (prozessSlots[i]->pid != NULL) {
-			if (strcmp(prozessSlots[i]->name, processName) == 0) {
-				return prozessSlots[i]->pid;
+		if (processSlots[i]->pid != NULL) {
+			if (strcmp(processSlots[i]->name, processName) == 0) {
+				return processSlots[i]->pid;
 			}
 		}
 	}
@@ -78,24 +79,24 @@ uint32_t process_manager_start_managing(ProcessId_t idleProcessId) {
 }
 
 Process_t* process_manager_get_current_process() {
-	return prozessSlots[currentProcessId];
+	return processSlots[currentProcessId];
 }
 
 Process_t* process_manager_get_process_byid(ProcessId_t id) {
-	if (id > sizeof(prozessSlots) || id == INVALID_PROCESS_ID) {
+	if (id > sizeof(processSlots) || id == INVALID_PROCESS_ID) {
 		return NULL;
 	}
 
-	return prozessSlots[id];
+	return processSlots[id];
 }
 
 #pragma TASK(process_manager_block_current_process_c);
 void process_manager_block_current_process_c(void) {
-	prozessSlots[currentProcessId]->state = PROCESS_BLOCKED;
+	processSlots[currentProcessId]->state = PROCESS_BLOCKED;
 
 	int i;
 	for (i = 0; i < MAX_PROCESSES; i++) {
-		Process_t* p = prozessSlots[i];
+		Process_t* p = processSlots[i];
 		if (p != NULL && p->state == PROCESS_READY) {
 			currentProcessId = p->pid;
 			break;
