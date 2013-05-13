@@ -10,21 +10,31 @@
 #include "process_manager.h"
 #include "../hal/platform.h"
 #include "../hal/generic/process_context/process_context.h"
+#include "../hal/generic/timer/gptimer.h"
+#include "../hal/generic/irq/irq.h"
 #include "../service/logger/logger.h"
 
 static ProcessId_t currentProcessId;
-Process_t* processSlots[MAX_PROCESSES]; /* TODO: rename to english process */
+static gptimer_t _schedule_timer;
+static void _process_manager_irq_schedule_handler(void);
+static void _process_manager_schedule_next_process(void);
+
+Process_t* processSlots[MAX_PROCESSES];
 
 void* process_context_pointer;
 
 void process_manager_store_context(unsigned int*);
 void process_manager_load_context(unsigned int*);
 
-void process_manager_init() {
+void process_manager_init(void) {
 	int i;
 	for(i = 0; i < MAX_PROCESSES; i++) {
 		processSlots[i] = NULL;
 	}
+	gptimer_get_schedule_timer(&_schedule_timer);
+	irq_add_handler(_schedule_timer.intcps_mapping_id, &_process_manager_irq_schedule_handler);
+	gptimer_schedule_timer_init(&_schedule_timer);
+	currentProcessId = 0;
 }
 ProcessId_t process_manager_add_process(Process_t *theProcess) {
 	int i;
@@ -107,3 +117,37 @@ void process_manager_block_current_process_c(void) {
 	asm("\t SWI #0x2"); /* process_context_load */
 	/* TODO: blocking process should be possible with one SWI */
 }
+
+void process_manager_start_scheduling(void) {
+	gptimer_start(&_schedule_timer);
+}
+
+void _process_manager_irq_schedule_handler(void) {
+
+	_process_manager_schedule_next_process();
+
+	/* clear all pending interrupts */
+
+	//TODO: this is the wrong place for this code
+	gptimer_clear_pending_interrupts(&_schedule_timer);
+	*((unsigned int*)0x48200048) = 0x1; /* INTCPS_CONTROL s. 1083 */
+}
+
+void _process_manager_schedule_next_process(void) {
+	int i;
+	i = currentProcessId;
+	for(i = (currentProcessId + 1); i < MAX_PROCESSES; i++) {
+		if(processSlots[i] && processSlots[i]->state == PROCESS_READY)  {
+			process_manager_change_process(processSlots[i]->pid);
+			return;
+		}
+	}
+	//not (currentProcessId - 1) because we are aware that we also can have only one process
+	for(i = 0; i < currentProcessId; i++) {
+		if(processSlots[i] && processSlots[i]->state == PROCESS_READY)
+			process_manager_change_process(processSlots[i]->pid);
+			return;
+	}
+}
+
+

@@ -24,10 +24,7 @@ void gptimer_get(int timer_nr, gptimer_t* timer) {
 		case 1 : 	timer_base_address = GPTIMER1;
 					timer->intcps_mapping_id = GPTIMER1_INTCPS_MAPPING_ID; break;
 		case 2 : 	timer_base_address = GPTIMER2;
-					timer->intcps_mapping_id = GPTIMER2_INTCPS_MAPPING_ID;
-					*(cm_clksel_per) &= ~BIT0;	//set to 32 kHz clock
-					logger_log_register("\r\n\r\nSet gp timer2 clock to 32 khz... %s\n", cm_clksel_per);
-					break;
+					timer->intcps_mapping_id = GPTIMER2_INTCPS_MAPPING_ID; break;
 		case 3 : 	timer_base_address = GPTIMER3;
 					timer->intcps_mapping_id = GPTIMER3_INTCPS_MAPPING_ID; break;
 		case 4 : 	timer_base_address = GPTIMER4;
@@ -48,11 +45,13 @@ void gptimer_get(int timer_nr, gptimer_t* timer) {
 					timer->intcps_mapping_id = GPTIMER11_INTCPS_MAPPING_ID; break;
 		default: {
 			logger_error("Timer number %u in gptimer_get not supported!", timer_nr);
-			timer = NULL;
+			gptimer_t gptimter_error = { -1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL ,
+					NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+			*(timer) = 	gptimter_error;
 		}
 	}
 
-	if(timer) {
+	if(timer->intcps_mapping_id != -1) {
 		//set up common stuff
 		timer->TIDR = timer_base_address + GPTIMER_BASE_OFFSET_TIDR;
 		timer->TIOCP_CFG = timer_base_address + GPTIMER_BASE_OFFSET_TIOCP_CFG;
@@ -81,16 +80,12 @@ void gptimer_get_schedule_timer(gptimer_t* schedule_timer) {
 	gptimer_get(2, schedule_timer);
 }
 
-gptimer_config_t gptimer_get_default_timer_init_config(void) {
-	gptimer_config_t default_conf = { -1 };
-	return default_conf;
-}
+void gptimer_schedule_timer_init(gptimer_t* const timer) {
 
+	int schedule_time_in_millis = 3000;
 
-void gptimer_init(gptimer_t* const timer, const gptimer_config_t* const config) {
-
-	int pos_inc = ((((int)(32.768))+1)*1000000)-(32.768*1000000);
-	int neg_inc = (((int)(32.768))*1000000)-(32.768*1000000);
+	//set to 32 kHz clock
+	*(PRCM_CM_CLKSEL_PER) &= ~BIT0;
 
 	/* disable all interrupt events */
 	*(timer->TIER) &= 0x0;
@@ -100,17 +95,22 @@ void gptimer_init(gptimer_t* const timer, const gptimer_config_t* const config) 
 
 	gptimer_clear_pending_interrupts(timer);
 
-	/* set timer to 1 ms - OMAP35x.pdf Page 2625 */
-	*(timer->TPIR) = pos_inc;
-	*(timer->TNIR) = neg_inc;
+	/* set timer to 1 millisecond precision - OMAP35x.pdf Page 2625 */
+	//Timer counter registers is reset with Timer load register on overflow
+	//both are initially set to FFFF FFFF - 31
+	//32,768 clock ticks 32,768 per millisecond (~32)
+	//due to this is not exact, we use TPIR and TNIR as pointed out in OMAP3530x.pdf (page 2625)
+	//to minimize the millisecond error
 	*(timer->TLDR) = 0xFFFFFFE0;
 	*(timer->TCRR) = 0xFFFFFFE0;
+	*(timer->TPIR) = 232000;
+	*(timer->TNIR) = -768000;
 
 	/* set timer overflow match */
 	*(timer->TOCR) = 0x0;
-	*(timer->TOWR) = 0x18D;
-
-	/* TODO: Muss noch mit clock source getestet werden, jetzt 1ms */
+	//Timer overflow watch register defines the amount of overflows before the interrupt triggers
+	//Timer overflow control keeps track of current overflow status
+	*(timer->TOWR) = (schedule_time_in_millis -1 );
 
 	*(timer->TCLR) |= (GPTIMER_TCLR_COMPARE_ENABLE | GPTIMER_TCLR_AUTORELOAD_MODE
 			| GPTIMER_TCLR_TRIGER_OVERFLOW_MATCH);
@@ -129,39 +129,6 @@ void gptimer_stop(gptimer_t* const timer) {
 	*(timer->TCLR) &= ~GPTIMER_TCLR_START_STOP_CONTROL;
 }
 
-/* TODO: remove after setting up callback handlers for timer */
-#include "../../../kernel/process_manager.h"
-extern gptimer_t main_timer;
-int currentProcessId = -1;
-unsigned volatile int irq_number = 0;
-extern Process_t* processSlots[MAX_PROCESSES];
-
-void gptimer_handler(void) {
-	/* TODO: call handler function */
-	if (++irq_number % 8 == 0) { /* ~3 seconds */
-		int i = currentProcessId + 1;
-		Process_t* p;
-		while (i != currentProcessId) {
-			if (i >= MAX_PROCESSES) {
-				i = 0;
-			}
-			p = processSlots[i];
-			if (p != NULL && p->state == PROCESS_READY) {
-				currentProcessId = p->pid;
-				logger_error("Interrupt number: %u", irq_number);
-				break;
-			}
-
-			i++;
-		}
-
-		process_manager_change_process(currentProcessId);
-	}
-
-	/* clear all pending interrupts */
-	gptimer_clear_pending_interrupts(&main_timer);
-	*((unsigned int*)0x48200048) = 0x1; /* INTCPS_CONTROL s. 1083 */
-}
 void gptimer_clear_pending_interrupts(gptimer_t* const timer) {
 	*(timer->TISR) = (GPTIMER_TISR_CAPTURE_FLAG
 			| GPTIMER_TISR_MATCH_FLAG | GPTIMER_TISR_OVERFLOW_FLAG);

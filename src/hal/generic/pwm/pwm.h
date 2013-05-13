@@ -28,7 +28,6 @@ void pwm_get_timer(int id, gptimer_t* pwm_timer);
 #define PWM_PT_TOGGLE						BIT12
 
 typedef struct _pwm_config_t {
-	gptimer_config_t* timer_config;
 	unsigned char duty_cycle;			// 0-100. Represents high part of the PWD signal in percent.
 	unsigned int period_time;
 	unsigned int pwm_frequenz;

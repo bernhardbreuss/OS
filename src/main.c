@@ -6,7 +6,6 @@
 #include "service/logger/logger.h"
 #include "hal/generic/timer/gptimer.h"
 #include "hal/generic/pwm/pwm.h"
-#include "hal/generic/mpu_subsystem/intcps.h"
 #include "kernel/process.h"
 #include "kernel/process_manager.h"
 #include "driver/driver_manager.h" /* TODO: move to kernel */
@@ -15,22 +14,22 @@
 
 #pragma INTERRUPT(udef_handler, UDEF);
 interrupt void udef_handler() {
-	int i = 0;
-	i += 2;	logger_error("KERNEL PANIC: udef handler.");
+	logger_error("KERNEL PANIC: udef handler.");
+	while(1);
 }
 
 #pragma INTERRUPT(pabt_handler, PABT);
 interrupt void pabt_handler() {
-	int i = 0;
-	i += 2;
-	logger_error("KERNEL PANIC: Prefetch abort.");
+	logger_error("KERNLE PANIC: Prefetch abort.");
+	while(1);
 }
 
 #pragma INTERRUPT(dabt_handler, DABT);
 interrupt void dabt_handler() {
-	int i = 0;
-	i += 2;
+	//the address of the disassemble instruction where the data abort happened
+	//is located at (R14_ABT-8) see "Table 9.4" in "Arm System Developers Guide"
 	logger_error("KERNEL PANIC: data abort");
+	while(1);
 }
 
 gptimer_t main_timer;
@@ -139,20 +138,10 @@ void main(void) {
 	idle_process.func = &idle_task;
 	idle_process.name = "idle process";
 	process_manager_add_process(&idle_process);
+	process_manager_change_process(idle_process.pid);
 
-	/* start the process manager */
-	process_manager_start_managing(idle_process.pid);
-
-	/*int i = 0;
-	while (++i < 1000) {
-		do_pwm();
-	}*/
-
-	gptimer_get_schedule_timer(&main_timer);
-	intcps_activate_gptimer(&main_timer);
-	gptimer_config_t conf = gptimer_get_default_timer_init_config();
-	gptimer_init(&main_timer, &conf);
-	gptimer_start(&main_timer);
+	/* start scheduling */
+	process_manager_start_scheduling();
 
 	idle_process.func();
 }

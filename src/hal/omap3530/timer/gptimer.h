@@ -76,7 +76,7 @@ in TCRR will be the sub-period value or the over-period value. */
 #define GPTIMER_TCLR_PRESCALE				BIT5
 
 typedef struct _gptimer_t {
-	intcps_gptimer_mapping_t intcps_mapping_id;
+	intcps_mapping_id_t intcps_mapping_id;
 	unsigned int* volatile TIDR;
 	unsigned int* volatile TIOCP_CFG;
 	unsigned int* volatile TISTAT;
@@ -99,19 +99,6 @@ typedef struct _gptimer_t {
 	unsigned int* volatile TOWR;
 } gptimer_t;
 
-/**
- * Expandable configuration object
- *
- * Default values:
- *
- * ticks_in_millis;				//-1 = default = not defined
- */
-typedef struct _gp_timer_config_t {
-	int ticks_in_millis;
-} gptimer_config_t;
-
-
-void gptimer_handler(void);
 void gptimer_clear_pending_interrupts(gptimer_t* const timer);
 
 #endif /* OMAP3530_TIMER_H_ */

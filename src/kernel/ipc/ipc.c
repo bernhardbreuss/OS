@@ -27,7 +27,8 @@ void copy_msg(Process_t* src, Process_t* dst) {
 	memcpy(dst->ipc.msg, src->ipc.msg, sizeof(message_t));
 }
 
-extern Process_t* processSlots[MAX_PROCESSES]; /* TODO: wouldn't asking the manager be much better? */
+//TODO: ask the manager
+extern Process_t* processSlots[MAX_PROCESSES];
 uint32_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 	Process_t* src = process_manager_get_current_process();
 	Process_t* dst = NULL;

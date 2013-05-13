@@ -14,8 +14,11 @@
 
 /**
  * Initializes the processSlots array of the manager with NULL pointers.
+ * Initializes the schedule timer and register interrupt handler.
  */
-void process_manager_init();
+void process_manager_init(void);
+
+void process_manager_start_scheduling(void);
 
 /**
  * Adds the Process to the manager.
