@@ -16,12 +16,14 @@
 
 static ProcessId_t currentProcessId;
 static gptimer_t _schedule_timer;
+
 static void _process_manager_irq_schedule_handler(void);
-static void _process_manager_schedule_next_process(void);
+static ProcessId_t _process_manager_scheduler_get_next_process(void);
 
-Process_t* processSlots[MAX_PROCESSES];
+Process_t* processSlots[MAX_PROCESSES]; /* TODO: check if dependency in ipc.c could be resolved */
 
-void* process_context_pointer;
+static void* tmp_saved_context[PROCESS_CONTEXT_SIZE]; /* used before process_manager is fully functional */
+void* process_context_pointer = tmp_saved_context;
 
 void process_manager_store_context(unsigned int*);
 void process_manager_load_context(unsigned int*);
@@ -31,11 +33,13 @@ void process_manager_init(void) {
 	for(i = 0; i < MAX_PROCESSES; i++) {
 		processSlots[i] = NULL;
 	}
+
 	gptimer_get_schedule_timer(&_schedule_timer);
 	irq_add_handler(_schedule_timer.intcps_mapping_id, &_process_manager_irq_schedule_handler);
 	gptimer_schedule_timer_init(&_schedule_timer);
-	currentProcessId = 0;
+	currentProcessId = INVALID_PROCESS_ID;
 }
+
 ProcessId_t process_manager_add_process(Process_t *theProcess) {
 	int i;
 	for (i = 0; i < MAX_PROCESSES; i++) {
@@ -56,9 +60,16 @@ ProcessId_t process_manager_add_process(Process_t *theProcess) {
 }
 
 void process_manager_change_process(ProcessId_t processId) {
-	Process_t* p = processSlots[currentProcessId];
-	if (p != NULL && p->state == PROCESS_RUNNING) {
-		p->state = PROCESS_READY;
+	if (processId == INVALID_PROCESS_ID) {
+		processId = _process_manager_scheduler_get_next_process();
+	}
+
+	Process_t* p;
+	if (currentProcessId != INVALID_PROCESS_ID) {
+		p = processSlots[currentProcessId];
+		if (p != NULL && p->state == PROCESS_RUNNING) {
+			p->state = PROCESS_READY;
+		}
 	}
 
 	p = processSlots[processId];
@@ -83,13 +94,12 @@ ProcessId_t process_manager_get_process(process_name_t processName) {
 	return INVALID_PROCESS_ID;
 }
 
-uint32_t process_manager_start_managing(ProcessId_t idleProcessId) {
-	process_manager_change_process(idleProcessId);
-	return 0; /* TODO: ... */
-}
-
 Process_t* process_manager_get_current_process() {
-	return processSlots[currentProcessId];
+	if (currentProcessId == INVALID_PROCESS_ID) {
+		return NULL;
+	} else {
+		return processSlots[currentProcessId];
+	}
 }
 
 Process_t* process_manager_get_process_byid(ProcessId_t id) {
@@ -100,54 +110,37 @@ Process_t* process_manager_get_process_byid(ProcessId_t id) {
 	return processSlots[id];
 }
 
-#pragma TASK(process_manager_block_current_process_c);
-void process_manager_block_current_process_c(void) {
-	processSlots[currentProcessId]->state = PROCESS_BLOCKED;
-
-	int i;
-	for (i = 0; i < MAX_PROCESSES; i++) {
-		Process_t* p = processSlots[i];
-		if (p != NULL && p->state == PROCESS_READY) {
-			currentProcessId = p->pid;
-			break;
-		}
-	}
-
-	process_manager_change_process(currentProcessId);
-	asm("\t SWI #0x2"); /* process_context_load */
-	/* TODO: blocking process should be possible with one SWI */
-}
-
-void process_manager_start_scheduling(void) {
+void process_manager_start_scheduling() {
 	gptimer_start(&_schedule_timer);
+
+	process_manager_block_current_process(INVALID_PROCESS_ID);
 }
 
 void _process_manager_irq_schedule_handler(void) {
-
-	_process_manager_schedule_next_process();
-
 	/* clear all pending interrupts */
 
 	//TODO: this is the wrong place for this code
 	gptimer_clear_pending_interrupts(&_schedule_timer);
 	*((unsigned int*)0x48200048) = 0x1; /* INTCPS_CONTROL s. 1083 */
+
+	process_manager_change_process(INVALID_PROCESS_ID);
 }
 
-void _process_manager_schedule_next_process(void) {
-	int i;
-	i = currentProcessId;
-	for(i = (currentProcessId + 1); i < MAX_PROCESSES; i++) {
-		if(processSlots[i] && processSlots[i]->state == PROCESS_READY)  {
-			process_manager_change_process(processSlots[i]->pid);
-			return;
+ProcessId_t _process_manager_scheduler_get_next_process(void) {
+	int i = currentProcessId + 1;
+	Process_t* p;
+	while (i != currentProcessId) {
+		if (i >= MAX_PROCESSES) {
+			i = 0;
 		}
+
+		p = processSlots[i];
+		if (p != NULL && p->state == PROCESS_READY) {
+			return p->pid;
+		}
+
+		i++;
 	}
-	//not (currentProcessId - 1) because we are aware that we also can have only one process
-	for(i = 0; i < currentProcessId; i++) {
-		if(processSlots[i] && processSlots[i]->state == PROCESS_READY)
-			process_manager_change_process(processSlots[i]->pid);
-			return;
-	}
+
+	return INVALID_PROCESS_ID;
 }
-
-

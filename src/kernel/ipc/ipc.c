@@ -64,7 +64,7 @@ uint32_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 				src->state = PROCESS_BLOCKED;
 
 				/* pause process */
-				process_manager_block_current_process();
+				process_manager_block_current_process(dst->pid);
 			}
 
 			/* msg delivered, falling through receive except for send only */
@@ -104,7 +104,7 @@ uint32_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 				_enable_interrupts();
 
 				/* pause process */
-				process_manager_block_current_process();
+				process_manager_block_current_process(dst != NULL ? dst->pid : INVALID_PROCESS_ID);
 
 				/* msg received */
 			}

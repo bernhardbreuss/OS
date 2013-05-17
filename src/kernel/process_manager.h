@@ -36,5 +36,6 @@ Process_t* process_manager_get_current_process();
 
 Process_t* process_manager_get_process_byid(ProcessId_t id);
 
-void process_manager_block_current_process(void);
+#pragma SWI_ALIAS(process_manager_block_current_process, 1)
+void process_manager_block_current_process(ProcessId_t next);
 #endif /* PROCESS_MANAGER_H_ */

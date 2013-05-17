@@ -138,10 +138,7 @@ void main(void) {
 	idle_process.func = &idle_task;
 	idle_process.name = "idle process";
 	process_manager_add_process(&idle_process);
-	process_manager_change_process(idle_process.pid);
 
 	/* start scheduling */
 	process_manager_start_scheduling();
-
-	idle_process.func();
 }
