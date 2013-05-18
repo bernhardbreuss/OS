@@ -33,10 +33,10 @@ swi_handler_syscall:
 
 	MOV R11, R14				; load R14 (user PC) into R11
 
-	MSR CPSR_c, #0x1F			; change to system mode now
+	CPS #0x1F					; change to system mode now
 	STMFD R13!, {R11-R12}		; store user PC and SPSR
 
-	MSR CPSR_c, #0x13			; change back to svc mode
+	CPS #0x13					; change back to svc mode
 
 	ORR R12, R12, #0x1F			; after interrupt handling, this
 	MSR SPSR_c, R12				; process should be in system mode

@@ -112,7 +112,7 @@ void main(void) {
 	logger_debug("\r\n\r\nSystem init...");
 	logger_logmode();
 
-	asm("\t MSR CPSR_c, #0x10");
+	asm("\t CPS #0x10");
 	logger_logmode();
 
 	/* init led stuff */
