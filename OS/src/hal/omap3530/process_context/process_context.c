@@ -11,7 +11,7 @@
 #include <inttypes.h>
 
 uint8_t process_context_init(Process_t* process) {
-	int* stack = malloc(PROCESS_STACK_SIZE);
+	uint8_t* stack = malloc(PROCESS_STACK_SIZE);
 	if (stack != NULL) {
 		memset(stack, 0, PROCESS_STACK_SIZE);
 		memset(process->saved_context, 0, sizeof(process->saved_context));
@@ -23,7 +23,7 @@ uint8_t process_context_init(Process_t* process) {
 		 * CPSR
 		 */
 		process->saved_context[0] = process->func;
-		process->saved_context[14] = stack + (PROCESS_STACK_SIZE / sizeof(int*)); /* R13 */
+		process->saved_context[14] = stack + PROCESS_STACK_SIZE; /* R13 */
 		process->saved_context[16] = (void*)_get_CPSR(); /* initialize CPSR with current CPSR */
 
 		return 1;
