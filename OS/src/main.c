@@ -11,6 +11,10 @@
 #include "driver/driver_manager.h" /* TODO: move to kernel */
 #include "kernel/ipc/ipc.h"
 #include "tests/pwm_test.h"
+#include "kernel/loader/binary.h"
+#include "kernel/loader/elf.h"
+#include "kernel/loader/loader.h"
+#include "binary.h"
 
 #pragma INTERRUPT(udef_handler, UDEF);
 interrupt void udef_handler() {
@@ -105,6 +109,21 @@ uint32_t ipc_process1(void) {
 	}
 }
 
+
+uint32_t BB_read(void* ident, void* dst, uint32_t offset, size_t length) {
+#ifndef BINARY_BeagleBlink_out /* ensure that everyone can build */
+#define BINARY_BeagleBlink_out { '\0' }
+#endif
+	static char BeagleBlink[] = BINARY_BeagleBlink_out;
+
+	if (length == 0 || (offset + length) > sizeof(BeagleBlink)) {
+		return 0;
+	}
+
+	memcpy(dst, &BeagleBlink[offset], length);
+	return 1;
+}
+
 extern Driver_t gpio_driver;
 ProcessId_t gpio_start_driver_process(Device_t device);
 void main(void) {
@@ -112,7 +131,19 @@ void main(void) {
 	logger_debug("\r\n\r\nSystem init...");
 	logger_logmode();
 
-	asm("\t MSR CPSR_c, #0x10");
+	/* Loader test stuff
+	binary_t* binary = elf_init(NULL, BB_read);
+	if (loader_load(binary, (void*)0x83000000, 0x254C)) {
+		logger_debug("binary loaded");
+		void (*main_func)(void) = (void(*)(void))((unsigned int)binary->entry_point);
+		main_func();
+	} else {
+		logger_debug("oO :(");
+	}
+	return; */
+
+
+	asm("\t CPS #0x10");
 	logger_logmode();
 
 	/* init led stuff */
@@ -138,10 +169,7 @@ void main(void) {
 	idle_process.func = &idle_task;
 	idle_process.name = "idle process";
 	process_manager_add_process(&idle_process);
-	process_manager_change_process(idle_process.pid);
 
 	/* start scheduling */
 	process_manager_start_scheduling();
-
-	idle_process.func();
 }

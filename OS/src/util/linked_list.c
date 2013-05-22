@@ -44,6 +44,18 @@ linked_list_node_t* linked_list_add(linked_list_t* list, void* value) {
 	return new_node;
 }
 
+linked_list_node_t* linked_list_insert_begin(linked_list_t* list, void* value) {
+	linked_list_node_t* new_node = get_node(value);
+	if (new_node == NULL) {
+		return NULL;
+	}
+
+	new_node->next = list->head;
+	list->head = new_node;
+
+	return new_node;
+}
+
 linked_list_node_t* linked_list_insert(linked_list_node_t* node, void* value) {
 	linked_list_node_t* new_node = get_node(value);
 	if (new_node == NULL) {

@@ -19,5 +19,6 @@
 # Eclipse Debug folder
 Debug/*
 
-.settings/org.eclipse.core.resources.prefs
+org.eclipse.core.resources.prefs
 /Debug
+*/.gitignore

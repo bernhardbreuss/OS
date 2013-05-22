@@ -22,6 +22,7 @@ struct _linked_list_node_t {
 
 void linked_list_init(linked_list_t* list);
 linked_list_node_t* linked_list_add(linked_list_t* list, void* value);
+linked_list_node_t* linked_list_insert_begin(linked_list_t* list, void* value);
 linked_list_node_t* linked_list_insert(linked_list_node_t* node, void* value);
 void linked_list_clear(linked_list_t* list);
 
