@@ -61,7 +61,7 @@ ProcessId_t start_driver(Device_t device) {
 	device_driver_map* mapping = get_driver(device);
 	if (mapping == NULL) {
 		//TODO: really can return NULL here?
-		return NULL;
+		return INVALID_PROCESS_ID;
 	}
 
 	linked_list_add(&device_list, mapping);

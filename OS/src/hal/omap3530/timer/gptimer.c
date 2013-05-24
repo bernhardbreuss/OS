@@ -5,10 +5,7 @@
  *      Author: Bernhard
  */
 
-#include <stdlib.h>
 #include "gptimer.h"
-#include "prcm.h"
-#include "../../../service/logger/logger.h"
 
 /*
 * @param timer_nr	- 	the timer number
@@ -22,27 +19,27 @@ void gptimer_get(int timer_nr, gptimer_t* timer) {
 	//set up timer specific stuff
 	switch(timer_nr) {
 		case 1 : 	timer_base_address = GPTIMER1;
-					timer->intcps_mapping_id = GPTIMER1_INTCPS_MAPPING_ID; break;
+					timer->interrupt_line_id = GPTIMER1_INTCPS_MAPPING_ID; break;
 		case 2 : 	timer_base_address = GPTIMER2;
-					timer->intcps_mapping_id = GPTIMER2_INTCPS_MAPPING_ID; break;
+					timer->interrupt_line_id = GPTIMER2_INTCPS_MAPPING_ID; break;
 		case 3 : 	timer_base_address = GPTIMER3;
-					timer->intcps_mapping_id = GPTIMER3_INTCPS_MAPPING_ID; break;
+					timer->interrupt_line_id = GPTIMER3_INTCPS_MAPPING_ID; break;
 		case 4 : 	timer_base_address = GPTIMER4;
-					timer->intcps_mapping_id = GPTIMER4_INTCPS_MAPPING_ID; break;
+					timer->interrupt_line_id = GPTIMER4_INTCPS_MAPPING_ID; break;
 		case 5 : 	timer_base_address = GPTIMER5;
-					timer->intcps_mapping_id = GPTIMER5_INTCPS_MAPPING_ID; break;
+					timer->interrupt_line_id = GPTIMER5_INTCPS_MAPPING_ID; break;
 		case 6 : 	timer_base_address = GPTIMER6;
-					timer->intcps_mapping_id = GPTIMER6_INTCPS_MAPPING_ID; break;
+					timer->interrupt_line_id = GPTIMER6_INTCPS_MAPPING_ID; break;
 		case 7 : 	timer_base_address = GPTIMER7;
-					timer->intcps_mapping_id = GPTIMER7_INTCPS_MAPPING_ID; break;
+					timer->interrupt_line_id = GPTIMER7_INTCPS_MAPPING_ID; break;
 		case 8 : 	timer_base_address = GPTIMER8;
-					timer->intcps_mapping_id = GPTIMER8_INTCPS_MAPPING_ID; break;
+					timer->interrupt_line_id = GPTIMER8_INTCPS_MAPPING_ID; break;
 		case 9 : 	timer_base_address = GPTIMER9;
-					timer->intcps_mapping_id = GPTIMER9_INTCPS_MAPPING_ID; break;
+					timer->interrupt_line_id = GPTIMER9_INTCPS_MAPPING_ID; break;
 		case 10: 	timer_base_address = GPTIMER10;
-					timer->intcps_mapping_id = GPTIMER10_INTCPS_MAPPING_ID; break;
+					timer->interrupt_line_id = GPTIMER10_INTCPS_MAPPING_ID; break;
 		case 11: 	timer_base_address = GPTIMER11;
-					timer->intcps_mapping_id = GPTIMER11_INTCPS_MAPPING_ID; break;
+					timer->interrupt_line_id = GPTIMER11_INTCPS_MAPPING_ID; break;
 		default: {
 			logger_error("Timer number %u in gptimer_get not supported!", timer_nr);
 			gptimer_t gptimter_error = { -1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL ,
@@ -51,7 +48,7 @@ void gptimer_get(int timer_nr, gptimer_t* timer) {
 		}
 	}
 
-	if(timer->intcps_mapping_id != -1) {
+	if(timer->interrupt_line_id != -1) {
 		//set up common stuff
 		timer->TIDR = timer_base_address + GPTIMER_BASE_OFFSET_TIDR;
 		timer->TIOCP_CFG = timer_base_address + GPTIMER_BASE_OFFSET_TIOCP_CFG;

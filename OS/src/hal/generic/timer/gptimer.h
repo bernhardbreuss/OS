@@ -14,8 +14,7 @@
 #ifndef TIMER_H_
 #define TIMER_H_
 
-
-#include "../../omap3530/timer/gptimer.h"
+#include "../../platform.h"
 
 /**
  * Call it to get the schedule timer which is able to work as millisecond precision timer.
@@ -40,5 +39,7 @@ void gptimer_schedule_timer_init(gptimer_t* const timer);
 void gptimer_start(gptimer_t* const timer);
 
 void gptimer_stop(gptimer_t* const timer);
+
+void gptimer_clear_pending_interrupts(gptimer_t* const timer);
 
 #endif /* TIMER_H_ */
