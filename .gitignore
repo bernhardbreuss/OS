@@ -18,6 +18,7 @@
 
 # Eclipse Debug folder
 Debug/*
+OS/Debug
 
 org.eclipse.core.resources.prefs
 /Debug

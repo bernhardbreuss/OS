@@ -31,7 +31,7 @@ typedef enum {
 	LOW
 } ProcessPriority_t;
 
-#include "ipc/message.h" /* do not move this up! otherwise circular includion will happen. */
+#include "ipc/message.h" /* do not move this up! otherwise circular inclusion will happen. */
 
 typedef struct {
 	ProcessId_t pid;

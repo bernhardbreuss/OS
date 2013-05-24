@@ -8,7 +8,11 @@
 #ifndef OMAP3530_PWM_H_
 #define OMAP3530_PWM_H_
 
+
 #include "../../generic/pwm/pwm.h"
+#include "../../generic/timer/gptimer.h"
+#include "../../../service/logger/logger.h"
+#include "../../../bit.h"
 
 /* ************************* *
  * 			PWM

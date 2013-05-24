@@ -35,7 +35,7 @@ void process_manager_init(void) {
 	}
 
 	gptimer_get_schedule_timer(&_schedule_timer);
-	irq_add_handler(_schedule_timer.intcps_mapping_id, &_process_manager_irq_schedule_handler);
+	irq_add_handler(_schedule_timer.interrupt_line_id, &_process_manager_irq_schedule_handler);
 	gptimer_schedule_timer_init(&_schedule_timer);
 	currentProcessId = INVALID_PROCESS_ID;
 }

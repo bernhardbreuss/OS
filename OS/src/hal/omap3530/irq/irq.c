@@ -23,16 +23,16 @@ void irq_init_handles(void) {
 	//initialization with NULL seemingly not necessary for _irq_handles ... all handles are NULL
 }
 
-void irq_add_handler(intcps_mapping_id_t id, void(*irq_handle_func)(void)) {
+void irq_add_handler(int interrupt_line_id, void(*irq_handle_func)(void)) {
 
-	if(_irq_handles[id] != NULL) {
-		logger_error("IRQ module - already assigned handler to handler: %u", id);
+	if(_irq_handles[interrupt_line_id] != NULL) {
+		logger_error("IRQ module - already assigned handler to handler: %d", interrupt_line_id);
 		return;
 	}
 
-	logger_debug("IRQ module - add handle %u", id);
-	intcps_active_interrupt_line(id);
-	_irq_handles[id] = irq_handle_func;
+	logger_debug("IRQ module - add handle %d", interrupt_line_id);
+	intcps_active_interrupt_line(interrupt_line_id);
+	_irq_handles[interrupt_line_id] = irq_handle_func;
 }
 
 void irq_handle_interrupt(void) {

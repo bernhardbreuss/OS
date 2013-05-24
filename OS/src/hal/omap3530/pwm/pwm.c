@@ -5,9 +5,7 @@
  *      Author: lumannnn
  */
 
-#include "../../generic/pwm/pwm.h"
 #include "pwm.h"
-#include "../../../service/logger/logger.h"
 
 // implicit functions
 static unsigned int pwm_calculate_load(unsigned int start, unsigned int load, float duty_cycle);
