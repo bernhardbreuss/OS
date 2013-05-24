@@ -14,7 +14,7 @@
 #include "kernel/loader/binary.h"
 #include "kernel/loader/elf.h"
 #include "kernel/loader/loader.h"
-#include "binary.h"
+//#include "binary.h"
 
 #pragma INTERRUPT(udef_handler, UDEF);
 interrupt void udef_handler() {
