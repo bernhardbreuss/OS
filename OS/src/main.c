@@ -6,6 +6,7 @@
 #include "service/logger/logger.h"
 #include "hal/generic/timer/gptimer.h"
 #include "hal/generic/pwm/pwm.h"
+#include "hal/generic/uart/uart_new.h"
 #include "kernel/process.h"
 #include "kernel/process_manager.h"
 #include "driver/driver_manager.h" /* TODO: move to kernel */
@@ -14,6 +15,7 @@
 #include "kernel/loader/binary.h"
 #include "kernel/loader/elf.h"
 #include "kernel/loader/loader.h"
+
 
 #pragma INTERRUPT(udef_handler, UDEF);
 interrupt void udef_handler() {
@@ -125,6 +127,11 @@ void main(void) {
 	logger_init();
 	logger_debug("\r\n\r\nSystem init...");
 	logger_logmode();
+
+	uart_t uart;
+	uart_new_get(2, &uart);
+	uart_new_software_reset(&uart);
+
 
 	/* Loader test stuff
 	binary_t* binary = elf_init(NULL, BB_read);

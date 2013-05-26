@@ -11,5 +11,6 @@
 #include "process.h"
 #include "devices.h"
 #include "timer.h"
+#include "uart.h"
 
 #endif /* OMAP3530_PLATFORM_H_ */
