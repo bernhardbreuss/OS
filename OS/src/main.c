@@ -15,6 +15,7 @@
 #include "kernel/loader/binary.h"
 #include "kernel/loader/elf.h"
 #include "kernel/loader/loader.h"
+//#include "binary.h"
 
 
 #pragma INTERRUPT(udef_handler, UDEF);
@@ -36,6 +37,8 @@ interrupt void dabt_handler() {
 	logger_error("KERNEL PANIC: data abort");
 	while(1);
 }
+
+gptimer_t main_timer;
 
 #define LED0_PIN			(1 << 21)
 #define LED1_PIN			(1 << 22)
@@ -85,6 +88,8 @@ void turnoff_rgb(void) {
 	*(GPIO5_OE) &= ~rgb;
 	*(GPIO5_DATAOUT) &= ~rgb;
 }
+
+void do_pwm(void);
 
 uint32_t ipc_process1(void) {
 	//GPIO led 0 toggle via IPC

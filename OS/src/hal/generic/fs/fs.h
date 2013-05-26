@@ -11,14 +11,26 @@
 #include <stdio.h>
 #include "fat_io_lib/fat_filelib.h"
 
+typedef enum {
+	UNDEFINED=0,
+	MMC,
+	SD,
+	SDIO
+} CardType_t;
+
+typedef struct _FileHandle {
+	unsigned int* instance;
+	CardType_t card_type;
+} FileHandle_t;
+
 /**
  * Initialise file system
  */
-int fs_init();
+int fs_init(FileHandle_t* handle);
 
-int fs_read();
+int fs_read(FileHandle_t* handle);
 
-int fs_write();
+int fs_write(FileHandle_t* handle);
 
 /*
 int media_init() {
