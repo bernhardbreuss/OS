@@ -346,7 +346,7 @@ typedef struct _MMCHS_BLK {
  * Detect attached card and select mode.
  * See OMAP35x.pdf, page 3153
  */
-static int fs_detect_mode();
+static int fs_device_detect_mode();
 
 /**
  * TODO: really a separate function?
@@ -354,7 +354,7 @@ static int fs_detect_mode();
  * Caution: Read access to the command response registers is allowed only when the command process is completed.
  * page 3153
  */
-static int fs_read_command_response_register();
+static int fs_device_read_command_response_register();
 
 static void fs_set_direction_read(unsigned int* MMCHS_instance);
 static void fs_set_direction_write(unsigned int* MMCHS_instance);

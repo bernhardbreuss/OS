@@ -10,35 +10,35 @@
 
 // private API
 
-static void fs_enable_interface_and_functional_clock(FileHandle_t* handle);
+static void fs_device_enable_interface_and_functional_clock(FileHandle_t* handle);
 
-static void fs_soft_reset(FileHandle_t* handle);
+static void fs_device_soft_reset(FileHandle_t* handle);
 
-static void fs_set_default_capabilities(FileHandle_t* handle);
-static void fs_wake_up_config(FileHandle_t* handle);
-static void fs_mmc_host_and_bus_config(FileHandle_t* handle);
+static void fs_device_set_default_capabilities(FileHandle_t* handle);
+static void fs_device_wake_up_config(FileHandle_t* handle);
+static void fs_device_mmc_host_and_bus_config(FileHandle_t* handle);
 
-static void fs_identify_card(FileHandle_t* handle);
+static void fs_device_identify_card(FileHandle_t* handle);
 
 // helper functions
 
-static int fs_check_mmchs_stat_cc(FileHandle_t* handle);
-static int fs_check_mmchs_stat_cto(FileHandle_t* handle);
-static void fs_set_mmchs_sysctl_src_and_wait_until_reset(FileHandle_t* handle);
+static int fs_device_check_mmchs_stat_cc(FileHandle_t* handle);
+static int fs_device_check_mmchs_stat_cto(FileHandle_t* handle);
+static void fs_device_set_mmchs_sysctl_src_and_wait_until_reset(FileHandle_t* handle);
 
-static void fs_finish_card_identification(FileHandle_t* handle);
+static void fs_device_finish_card_identification(FileHandle_t* handle);
 
-static void fs_send_cmd0();
-static void fs_send_cmd1();
-static void fs_send_cmd2();
-static void fs_send_cmd3();
-static void fs_send_cmd5();
-static void fs_send_cmd8();
-static void fs_send_cmd55();
-static void fs_send_cmd9();
-static void fs_send_cmd7();
-static void fs_set_bus_width_with_cmd6();
-static void fs_enable_high_speed_feature_with_cmd6();
+static void fs_device_send_cmd0();
+static void fs_device_send_cmd1();
+static void fs_device_send_cmd2();
+static void fs_device_send_cmd3();
+static void fs_device_send_cmd5();
+static void fs_device_send_cmd8();
+static void fs_device_send_cmd55();
+static void fs_device_send_cmd9();
+static void fs_device_send_cmd7();
+static void fs_device_set_bus_width_with_cmd6();
+static void fs_device_enable_high_speed_feature_with_cmd6();
 
 // * *********************** *
 // * 	API
@@ -57,13 +57,13 @@ int fs_init(FileHandle_t* handle) {
 	// customize module's idle and wake-up modes
 	// ->
 	// end
-	fs_enable_interface_and_functional_clock(handle);
-	fs_soft_reset(handle);
-	fs_set_default_capabilities(handle);
-	fs_wake_up_config(handle);
-	fs_mmc_host_and_bus_config(handle);
+	fs_device_enable_interface_and_functional_clock(handle);
+	fs_device_soft_reset(handle);
+	fs_device_set_default_capabilities(handle);
+	fs_device_wake_up_config(handle);
+	fs_device_mmc_host_and_bus_config(handle);
 
-	fs_identify_card(handle);
+	fs_device_identify_card(handle);
 
 	return 1;
 }
@@ -82,13 +82,13 @@ int fs_write(FileHandle_t* handle) {
 
 // private API
 
-static void fs_enable_interface_and_functional_clock(FileHandle_t* handle) {
+static void fs_device_enable_interface_and_functional_clock(FileHandle_t* handle) {
 	// Prior to any MMCHS register access one must enable MMCHS interface clock and functional clock in
 	// PRCM module registers PRCM.CM_ICLKEN1_CORE and PRCM.CM_FCLKEN1_CORE. Please refer to
 	// Chapter 4, Power, Reset, and Clock Management.
 }
 
-static void fs_soft_reset(FileHandle_t* handle) {
+static void fs_device_soft_reset(FileHandle_t* handle) {
 	// see page 3161
 	// set the MMCi.MMCHS_SYSCONFIG[1] SOFTRESET bit to 0x1
 	*(handle->instance + MMCHS_SYSCONFIG_OFFSET) |= MMCHS_SYSCONFIG_SOFTRESET;
@@ -100,7 +100,7 @@ static void fs_soft_reset(FileHandle_t* handle) {
 	while (*(sysstatus) != *(sysstatus_resetdone));
 }
 
-static void fs_set_default_capabilities(FileHandle_t* handle) {
+static void fs_device_set_default_capabilities(FileHandle_t* handle) {
 	/*
 	 * Software must read capabilities (in boot ROM for instance) and is allowed to set (write)
 	 * MMCi.MMCHS_CAPA[26:24] and MMCi.MMCHS_CUR_CAPA[23:0] registers before the MMC/SD/SDIO
@@ -109,7 +109,7 @@ static void fs_set_default_capabilities(FileHandle_t* handle) {
 
 }
 
-static void fs_wake_up_config(FileHandle_t* handle) {
+static void fs_device_wake_up_config(FileHandle_t* handle) {
 	// page 3162
 	// set the MMCi.MMCHS_SYSCONFIG[2] ENAWAKEUP bit to 0x1 if required
 	*(handle->instance + MMCHS_SYSCONFIG_OFFSET) |= MMCHS_SYSCONFIG_ENAWAKEUP;
@@ -119,7 +119,7 @@ static void fs_wake_up_config(FileHandle_t* handle) {
 	*(handle->instance + MMCHS_IE_OFFSET) |= MMCHS_IE_CIRQ_ENABLE;
 }
 
-static void fs_mmc_host_and_bus_config(FileHandle_t* handle) {
+static void fs_device_mmc_host_and_bus_config(FileHandle_t* handle) {
 	// page 3163
 	// write MMCi.MMCHS_CON register (OD, DW8, CEATA) to configure specific data and command transfer
 	*(handle->instance + MMCHS_CON_OFFSET) |= MMCHS_CON_OD
@@ -180,7 +180,7 @@ static void fs_mmc_host_and_bus_config(FileHandle_t* handle) {
 }
 
 // see page 3164:
-static void fs_identify_card(FileHandle_t* handle) {
+static void fs_device_identify_card(FileHandle_t* handle) {
 	// (Start)
 
 	// TODO? should already be handled in the init
@@ -211,15 +211,15 @@ static void fs_identify_card(FileHandle_t* handle) {
 	// TODO
 	// change clock frequency to fit protocol
 
-	fs_send_cmd0();
+	fs_device_send_cmd0();
 	// (A)
 	// send a CMD5 command
-	fs_send_cmd5();
+	fs_device_send_cmd5();
 
 	// read the MMCi.MMCHS_STAT register
 	while (1) {
 		// CC = 0x1
-		if (fs_check_mmchs_stat_cc(handle) == 1) {
+		if (fs_device_check_mmchs_stat_cc(handle) == 1) {
 			// it is an SDIO card
 			handle->card_type = SDIO;
 
@@ -231,18 +231,18 @@ static void fs_identify_card(FileHandle_t* handle) {
 			return;
 		}
 		// CTO = 0x1
-		if (fs_check_mmchs_stat_cto(handle) == 1) {
+		if (fs_device_check_mmchs_stat_cto(handle) == 1) {
 			break;
 		}
 	}
 
-	fs_set_mmchs_sysctl_src_and_wait_until_reset(handle);
-	fs_send_cmd8();
+	fs_device_set_mmchs_sysctl_src_and_wait_until_reset(handle);
+	fs_device_send_cmd8();
 
 	// read the MMCi.MMCHS_STAT register
 	while (1) {
 		// CC = 0x1
-		if (fs_check_mmchs_stat_cc(handle) == 1) {
+		if (fs_device_check_mmchs_stat_cc(handle) == 1) {
 			// yes? (it is an SD card compliant with standard 2.0 or later)
 			handle->card_type = SD;
 
@@ -254,12 +254,12 @@ static void fs_identify_card(FileHandle_t* handle) {
 			return;
 		}
 		// CTO = 0x1
-		if (fs_check_mmchs_stat_cto(handle) == 1) {
+		if (fs_device_check_mmchs_stat_cto(handle) == 1) {
 			break;
 		}
 	}
 
-	fs_set_mmchs_sysctl_src_and_wait_until_reset(handle);
+	fs_device_set_mmchs_sysctl_src_and_wait_until_reset(handle);
 
 	int abort = 0;
 	while (abort == 0) {
@@ -270,13 +270,13 @@ static void fs_identify_card(FileHandle_t* handle) {
 		//  V
 
 		// TODO:
-		fs_send_cmd55();
+		fs_device_send_cmd55();
 		// send an ACMD41 command
 
 		// read the MMCi.MMCHS_STAT register
 		while (1) {
 			// CC = 0x1
-			if (fs_check_mmchs_stat_cc(handle) == 1) {
+			if (fs_device_check_mmchs_stat_cc(handle) == 1) {
 				// (it is a SD card compliant with standard 1.x)
 				handle->card_type = SD;
 
@@ -287,7 +287,7 @@ static void fs_identify_card(FileHandle_t* handle) {
 				if (*(mmchs_rsp10) == (*(mmchs_rsp10)) | BIT31) {
 					// --> yes? -> the card is not busy
 					// 			goto (B)
-					fs_finish_card_identification(handle);
+					fs_device_finish_card_identification(handle);
 					return;
 				} else {
 					// --> no? -> the card is busy
@@ -298,7 +298,7 @@ static void fs_identify_card(FileHandle_t* handle) {
 				}
 			}
 			// CTO = 0x1
-			if (fs_check_mmchs_stat_cto(handle) == 1) {
+			if (fs_device_check_mmchs_stat_cto(handle) == 1) {
 				// it is a MMC card
 				abort = 1;
 				break;
@@ -308,7 +308,7 @@ static void fs_identify_card(FileHandle_t* handle) {
 
 	// (it is a MMC card)
 	handle->card_type = MMC;
-	fs_set_mmchs_sysctl_src_and_wait_until_reset(handle);
+	fs_device_set_mmchs_sysctl_src_and_wait_until_reset(handle);
 
 	while (1) {
 		// ----------
@@ -317,19 +317,19 @@ static void fs_identify_card(FileHandle_t* handle) {
 
 		// TODO
 		// send a CMD1 command* (*With OCR 0. In case of a CMD1 with OCR=0, a second CMD1 must be sent to the card with the "negociated" voltage.
-		fs_send_cmd1();
+		fs_device_send_cmd1();
 
 		// read the MMCi.MMCHS_STAT register
 		while (1) {
 			// CTO = 0x1
-			if (fs_check_mmchs_stat_cto(handle) == 1) {
+			if (fs_device_check_mmchs_stat_cto(handle) == 1) {
 				// unknown type of card
 				// goto (end)
 				return;
 			}
 
 			// CC = 0x1
-			if (fs_check_mmchs_stat_cc(handle) == 1) {
+			if (fs_device_check_mmchs_stat_cc(handle) == 1) {
 				break;
 			}
 		}
@@ -344,7 +344,7 @@ static void fs_identify_card(FileHandle_t* handle) {
 		if (*(mmchs_rsp10) == (*(mmchs_rsp10)) | BIT31) {
 			// --> yes? -> the card is not busy
 			// 			goto (B)
-			fs_finish_card_identification(handle);
+			fs_device_finish_card_identification(handle);
 			return;
 		} else {
 			// --> no? (the card is busy)
@@ -358,13 +358,13 @@ static void fs_identify_card(FileHandle_t* handle) {
 /**
  * (B)
  */
-static void fs_finish_card_identification(FileHandle_t* handle) {
+static void fs_device_finish_card_identification(FileHandle_t* handle) {
 	// (B)
 
 	// TODO
 	// send a CMD2 command to get information on how to access the card content
-	fs_send_cmd2();
-	fs_send_cmd3();
+	fs_device_send_cmd2();
+	fs_device_send_cmd3();
 
 	// card type?
 	if (handle->card_type == MMC) {
@@ -378,7 +378,7 @@ static void fs_finish_card_identification(FileHandle_t* handle) {
 
 	// (continue)
 
-	fs_send_cmd7();
+	fs_device_send_cmd7();
 }
 
 static int fs_detect_mode() {
@@ -396,7 +396,7 @@ static void fs_set_direction_write(unsigned int* MMCHS_instance) {
 
 // helper functions
 
-static int fs_check_mmchs_stat_cc(FileHandle_t* handle) {
+static int fs_device_check_mmchs_stat_cc(FileHandle_t* handle) {
 	if (*(handle->instance + MMCHS_STAT_OFFSET) == (*(handle->instance + MMCHS_STAT_OFFSET) | MMCHS_STAT_CC)) {
 		return 1;
 	}
@@ -404,7 +404,7 @@ static int fs_check_mmchs_stat_cc(FileHandle_t* handle) {
 	return 0;
 }
 
-static int fs_check_mmchs_stat_cto(FileHandle_t* handle) {
+static int fs_device_check_mmchs_stat_cto(FileHandle_t* handle) {
 	if (*(handle->instance + MMCHS_STAT_OFFSET) == (*(handle->instance + MMCHS_STAT_OFFSET) | MMCHS_STAT_CTO)) {
 		return 1;
 	}
@@ -412,7 +412,7 @@ static int fs_check_mmchs_stat_cto(FileHandle_t* handle) {
 	return 0;
 }
 
-static void fs_set_mmchs_sysctl_src_and_wait_until_reset(FileHandle_t* handle) {
+static void fs_device_set_mmchs_sysctl_src_and_wait_until_reset(FileHandle_t* handle) {
 	// TODO: wooow... wtf.. check this. it was quite late when i wrote this!
 	unsigned int* sysctl = handle->instance + MMCHS_SYSCTL_OFFSET;
 	unsigned int* sysctl_unset = sysctl;
@@ -424,71 +424,71 @@ static void fs_set_mmchs_sysctl_src_and_wait_until_reset(FileHandle_t* handle) {
 	while (*(sysctl) != *(sysctl_unset));
 }
 
-static void fs_send_cmd0() {
+static void fs_device_send_cmd0() {
 	*(MMCHS1_BASE + MMCHS_CON_OFFSET) |= 0x00000001;
 	*(MMCHS1_BASE + MMCHS_IE_OFFSET) |= 0x00040001;
 	*(MMCHS1_BASE + MMCHS_ISE_OFFSET) |= 0x00040001;
 	*(MMCHS1_BASE + MMCHS_CMD_OFFSET) |= 0x00000000;
 }
-static void fs_send_cmd1() {
+static void fs_device_send_cmd1() {
 	*(MMCHS1_BASE + MMCHS_CON_OFFSET) |= 0x00000001;
 	*(MMCHS1_BASE + MMCHS_IE_OFFSET) |= 0x00050001;
 	*(MMCHS1_BASE + MMCHS_ISE_OFFSET) |= 0x00050001;
 	*(MMCHS1_BASE + MMCHS_CMD_OFFSET) |= 0x01020000;
 }
-static void fs_send_cmd2() {
+static void fs_device_send_cmd2() {
 	*(MMCHS1_BASE + MMCHS_CON_OFFSET) |= 0x00000001;
 	*(MMCHS1_BASE + MMCHS_IE_OFFSET) |= 0x00070001;
 	*(MMCHS1_BASE + MMCHS_ISE_OFFSET) |= 0x00070001;
 	*(MMCHS1_BASE + MMCHS_CMD_OFFSET) |= 0x02090000;
 }
-static void fs_send_cmd3() {
+static void fs_device_send_cmd3() {
 	*(MMCHS1_BASE + MMCHS_CON_OFFSET) |= 0x00000001;
 	*(MMCHS1_BASE + MMCHS_IE_OFFSET) |= 0x100f0001;
 	*(MMCHS1_BASE + MMCHS_ISE_OFFSET) |= 0x100f0001;
 	*(MMCHS1_BASE + MMCHS_CMD_OFFSET) |= 0x031a0000;
 	*(MMCHS1_BASE + MMCHS_ARG_OFFSET) |= 0x00010000;
 }
-static void fs_send_cmd5() {
+static void fs_device_send_cmd5() {
 	*(MMCHS1_BASE + MMCHS_CON_OFFSET) |= 0x00000001;
 	*(MMCHS1_BASE + MMCHS_IE_OFFSET) |= 0x00050001;
 	*(MMCHS1_BASE + MMCHS_ISE_OFFSET) |= 0x00050001;
 	*(MMCHS1_BASE + MMCHS_CMD_OFFSET) |= 0x05020000;
 }
-static void fs_send_cmd8() {
+static void fs_device_send_cmd8() {
 	*(MMCHS1_BASE + MMCHS_CON_OFFSET) |= 0x00000001;
 	*(MMCHS1_BASE + MMCHS_IE_OFFSET) |= 0x100f0001;
 	*(MMCHS1_BASE + MMCHS_ISE_OFFSET) |= 0x100f0001;
 	*(MMCHS1_BASE + MMCHS_CMD_OFFSET) |= 0x81a0000;
 }
-static void fs_send_cmd55() {
+static void fs_device_send_cmd55() {
 	*(MMCHS1_BASE + MMCHS_CON_OFFSET) |= 0x00000001;
 	*(MMCHS1_BASE + MMCHS_IE_OFFSET) |= 0x100f0001;
 	*(MMCHS1_BASE + MMCHS_ISE_OFFSET) |= 0x100f0001;
 	*(MMCHS1_BASE + MMCHS_CMD_OFFSET) |= 0x371a0000;
 }
-static void fs_send_cmd9() {
+static void fs_device_send_cmd9() {
 	*(MMCHS1_BASE + MMCHS_CON_OFFSET) |= 0x00000000;
 	*(MMCHS1_BASE + MMCHS_IE_OFFSET) |= 0x00070001;
 	*(MMCHS1_BASE + MMCHS_ISE_OFFSET) |= 0x00070001;
 	*(MMCHS1_BASE + MMCHS_CMD_OFFSET) |= 0x09090000;
 	*(MMCHS1_BASE + MMCHS_ARG_OFFSET) |= 0x00010000;
 }
-static void fs_send_cmd7() {
+static void fs_device_send_cmd7() {
 	*(MMCHS1_BASE + MMCHS_CON_OFFSET) |= 0x00000000;
 	*(MMCHS1_BASE + MMCHS_IE_OFFSET) |= 0x100f0001;
 	*(MMCHS1_BASE + MMCHS_ISE_OFFSET) |= 0x100f0001;
 	*(MMCHS1_BASE + MMCHS_CMD_OFFSET) |= 0x071a0000;
 	*(MMCHS1_BASE + MMCHS_ARG_OFFSET) |= 0x00010000;
 }
-static void fs_set_bus_width_with_cmd6() {
+static void fs_device_set_bus_width_with_cmd6() {
 	*(MMCHS1_BASE + MMCHS_CON_OFFSET) |= 0x00000000;
 	*(MMCHS1_BASE + MMCHS_IE_OFFSET) |= 0x100f0001;
 	*(MMCHS1_BASE + MMCHS_ISE_OFFSET) |= 0x100f0001;
 	*(MMCHS1_BASE + MMCHS_CMD_OFFSET) |= 0x061b0000;
 	*(MMCHS1_BASE + MMCHS_ARG_OFFSET) |= 0x03b70200;
 }
-static void fs_enable_high_speed_feature_with_cmd6() {
+static void fs_device_enable_high_speed_feature_with_cmd6() {
 	*(MMCHS1_BASE + MMCHS_CON_OFFSET) |= 0x00000020;
 	*(MMCHS1_BASE + MMCHS_IE_OFFSET) |= 0x100f0001;
 	*(MMCHS1_BASE + MMCHS_ISE_OFFSET) |= 0x100f0001;
