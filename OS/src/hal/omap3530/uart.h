@@ -51,4 +51,14 @@ typedef struct _uart_t {
 	volatile unsigned int* CFPS_REG;
 } uart_t;
 
-#endif /* UART_H_ */
+/*
+ * UART protocol format
+ */
+typedef struct uart_protocol_format_t {
+    unsigned int baudrate;
+    unsigned short datalen;
+    unsigned short stopbit;
+    unsigned int use_parity;
+} uart_protocol_format_t;
+
+#endif /* OMAP3530_UART_PLATFORM_H_ */

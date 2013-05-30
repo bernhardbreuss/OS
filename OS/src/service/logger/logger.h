@@ -10,7 +10,6 @@
 
 #include "../serial_service.h"
 
-void logger_init();
 void logger_debug(char* format, ...);
 void logger_warn(char* format, ...);
 void logger_error(char* format, ...);

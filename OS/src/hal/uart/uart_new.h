@@ -1,21 +1,26 @@
 /*
- * uart_new.h
+ * uart.h
  *
  *  Created on: 24.05.2013
  *      Author: füssi CoOp edi
  */
 
-#ifndef UART_NEW_H_
-#define UART_UART_NEW_H_
+#ifndef UART_OMAP3530_H_
+#define UART_OMAP3530_H_
 
 #include "../../service/logger/logger.h"
-#include "../generic/uart/uart_new.h"
+#include "../generic/uart/uart.h"
 #include "../../bit.h"
 #include <stdlib.h>
 
-#define UART1_NEW 		((unsigned int) 0x4806A000)
-#define UART2_NEW 		((unsigned int) 0x4806C000)
-#define UART3_NEW 		((unsigned int) 0x49020000)
+//TODO: remove NEW tag
+
+#define UART1 		((unsigned int) 0x4806A000)
+#define UART_NR_1		1
+#define UART2 		((unsigned int) 0x4806C000)
+#define UART_NR_2		2
+#define UART3 		((unsigned int) 0x49020000)
+#define UART_NR_3		3
 
 #define UART_DLL_REG_OFFSET  			0x0
 #define UART_RHR_REG_OFFSET  			0x0
@@ -58,4 +63,4 @@
 #define UART_WER_REG_OFFSET  			0x05C
 #define UART_CFPS_REG_OFFSET  			0x060
 
-#endif /* UART_NEW_H_ */
+#endif /* UART_OMAP3530_H_ */

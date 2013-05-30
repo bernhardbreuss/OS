@@ -6,7 +6,7 @@
 #include "service/logger/logger.h"
 #include "hal/generic/timer/gptimer.h"
 #include "hal/generic/pwm/pwm.h"
-#include "hal/generic/uart/uart_new.h"
+#include "hal/generic/uart/uart.h"
 #include "kernel/process.h"
 #include "kernel/process_manager.h"
 #include "driver/driver_manager.h" /* TODO: move to kernel */
@@ -15,6 +15,7 @@
 #include "kernel/loader/binary.h"
 #include "kernel/loader/elf.h"
 #include "kernel/loader/loader.h"
+#include "service/serial_service.h"
 //#include "binary.h"
 
 
@@ -111,6 +112,14 @@ uint32_t ipc_process1(void) {
 	}
 }
 
+uart_t uart3;
+uint32_t uart3_read_process(void) {
+	while(1) {
+		char buff[1];
+		serial_service_read(&uart3, &buff[0], 1);
+		logger_debug("Received: %c", buff[0]);
+	}
+}
 
 uint32_t BB_read(void* ident, void* dst, uint32_t offset, size_t length) {
 #ifndef BINARY_BeagleBlink_out /* ensure that everyone can build */
@@ -126,17 +135,21 @@ uint32_t BB_read(void* ident, void* dst, uint32_t offset, size_t length) {
 	return 1;
 }
 
+
 extern Driver_t gpio_driver;
 ProcessId_t gpio_start_driver_process(Device_t device);
 void main(void) {
-	logger_init();
+
+	uart_get(3, &uart3);
+	uart_protocol_format_t protocol;
+	protocol.baudrate = 0x001A;
+	protocol.stopbit = 0x0;		//1 stop bit
+	protocol.datalen = 0x3;		//length 8
+	protocol.use_parity = 0x0;
+	uart_init(&uart3, 0x00, protocol, 0x00);
+
 	logger_debug("\r\n\r\nSystem init...");
 	logger_logmode();
-
-	uart_t uart;
-	uart_new_get(2, &uart);
-	uart_new_software_reset(&uart);
-
 
 	/* Loader test stuff
 	binary_t* binary = elf_init(NULL, BB_read);
@@ -167,9 +180,13 @@ void main(void) {
 	process1.name = "LED 0 (IPC, fast)";
 	process_manager_add_process(&process1);
 
-	process2.func = &led1;
-	process2.name = "LED 1 (slow)";
+//	process2.func = &led1;
+//	process2.name = "LED 1 (slow)";
+//	process_manager_add_process(&process2);
+	process2.func = &uart3_read_process;
+	process2.name = "UART Poll";
 	process_manager_add_process(&process2);
+
 
 	/* idle task */
 	Process_t idle_process;

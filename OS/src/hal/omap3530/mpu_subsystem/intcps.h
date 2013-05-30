@@ -44,6 +44,11 @@
 #define GPTIMER10_INTCPS_MAPPING_ID 		46
 #define GPTIMER11_INTCPS_MAPPING_ID 		47
 
+#define UART1_INTCPS_MAPPING_ID				72
+#define UART2_INTCPS_MAPPING_ID				73
+#define UART3_INTCPS_MAPPING_ID				74
+
+
 /*
  * Call this to activate the interrupt line for this interrupt line
  * associated with this inctps_mapping_id

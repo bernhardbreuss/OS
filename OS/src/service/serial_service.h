@@ -9,11 +9,10 @@
 #define SERIAL_SERVICE_H_
 
 
-#include "../hal/uart/uart.h"
+#include "../hal/generic/uart/uart.h"
 
-void serial_service_init();
-void serial_service_write(char* buffer, int count);
-int serial_service_read(char* buffer, int count);
+void serial_service_write(uart_t* const uart, char* buffer, int count);
+int serial_service_read(uart_t* const uart, char* buffer, int count);
 
 
 #endif /* SERIAL_SERVICE_H_ */
