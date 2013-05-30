@@ -8,9 +8,9 @@
 #ifndef UART_OMAP3530_H_
 #define UART_OMAP3530_H_
 
-#include "../../service/logger/logger.h"
-#include "../generic/uart/uart.h"
-#include "../../bit.h"
+#include "../../../service/logger/logger.h"
+#include "../../generic/uart/uart.h"
+#include "../../../bit.h"
 #include <stdlib.h>
 
 //TODO: remove NEW tag

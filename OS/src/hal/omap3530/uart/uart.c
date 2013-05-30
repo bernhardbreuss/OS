@@ -6,7 +6,7 @@
  */
 
 #include "uart.h"
-#include "../../bit.h"
+#include "../../../bit.h"
 
 static void uart_software_reset(uart_t* const uart);
 static int uart_switch_to_config_mode_b(uart_t* const uart);
@@ -21,9 +21,9 @@ void uart_get(int uart_nr, uart_t* uart){
 	unsigned int uart_base_address;
 
 	switch(uart_nr) {
-		case 1 : uart_base_address = UART1_NEW; break;
-		case 2 : uart_base_address = UART2_NEW; break;
-		case 3 : uart_base_address = UART3_NEW; break;
+		case 1 : uart_base_address = UART1; break;
+		case 2 : uart_base_address = UART2; break;
+		case 3 : uart_base_address = UART3; break;
 		default:
 			logger_error("UART number %d in  not supported!", uart_nr);
 			uart_t fault = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
