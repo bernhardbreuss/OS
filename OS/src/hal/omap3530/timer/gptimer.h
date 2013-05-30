@@ -8,9 +8,12 @@
 #ifndef OMAP3530_TIMER_H_
 #define OMAP3530_TIMER_H_
 
+#include "../../../service/logger/logger.h"
 #include "../../../bit.h"
+#include "../../generic/timer/gptimer.h"
 #include "../mpu_subsystem/intcps.h"
-
+#include "prcm.h"
+#include <stdlib.h>
 
 /* OMAPP35x.pdf - page 2632 -> base addresses of GP Timer module instances */
 /* each timer 4k bytes */
@@ -74,31 +77,5 @@ in TCRR will be the sub-period value or the over-period value. */
 #define GPTIMER_TCLR_TRIGER_OVERFLOW		BIT10
 #define GPTIMER_TCLR_TRIGER_OVERFLOW_MATCH	BIT11
 #define GPTIMER_TCLR_PRESCALE				BIT5
-
-typedef struct _gptimer_t {
-	intcps_mapping_id_t intcps_mapping_id;
-	unsigned int* volatile TIDR;
-	unsigned int* volatile TIOCP_CFG;
-	unsigned int* volatile TISTAT;
-	unsigned int* volatile TISR;
-	unsigned int* volatile TIER;
-	unsigned int* volatile TWER;
-	unsigned int* volatile TCLR;
-	unsigned int* volatile TCRR;
-	unsigned int* volatile TLDR;
-	unsigned int* volatile TTGR;
-	unsigned int* volatile TWPS;
-	unsigned int* volatile TMAR;
-	unsigned int* volatile TCAR1;
-	unsigned int* volatile TSICR;
-	unsigned int* volatile TCAR2;
-	unsigned int* volatile TPIR;
-	int* volatile TNIR;
-	unsigned int* volatile TCVR;
-	unsigned int* volatile TOCR;
-	unsigned int* volatile TOWR;
-} gptimer_t;
-
-void gptimer_clear_pending_interrupts(gptimer_t* const timer);
 
 #endif /* OMAP3530_TIMER_H_ */

@@ -69,7 +69,7 @@ void process_manager_init(mmu_table_t* kernel_page_table) {
 	process_manager_add_process(&idle_process); /* TODO: check for errors */
 
 	gptimer_get_schedule_timer(&_schedule_timer);
-	irq_add_handler(_schedule_timer.intcps_mapping_id, &_process_manager_irq_schedule_handler);
+	irq_add_handler(_schedule_timer.interrupt_line_id, &_process_manager_irq_schedule_handler);
 	gptimer_schedule_timer_init(&_schedule_timer);
 	gptimer_start(&_schedule_timer);
 }
@@ -127,10 +127,7 @@ Process_t* process_manager_get_process_byid(ProcessId_t id) {
 
 static void _process_manager_irq_schedule_handler(void) {
 	/* clear all pending interrupts */
-
-	//TODO: this is the wrong place for this code
 	gptimer_clear_pending_interrupts(&_schedule_timer);
-	*((unsigned int*)0x48200048) = 0x1; /* INTCPS_CONTROL s. 1083 */
 
 	process_manager_change_process(NULL);
 }

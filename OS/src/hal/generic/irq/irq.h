@@ -10,6 +10,6 @@
 
 #include "../../omap3530/mpu_subsystem/intcps.h"
 
-void irq_add_handler(intcps_mapping_id_t id, void(*irq_handle_func)(void));
+void irq_add_handler(int interrupt_line_id, void(*irq_handle_func)(void));
 
 #endif /* IRQ_H_ */

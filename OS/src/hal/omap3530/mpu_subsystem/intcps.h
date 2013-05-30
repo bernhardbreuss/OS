@@ -44,17 +44,16 @@
 #define GPTIMER10_INTCPS_MAPPING_ID 		46
 #define GPTIMER11_INTCPS_MAPPING_ID 		47
 
-/**
- * Interrupt Mapping to the MPU System
- * Omap3530x.pdf page 1063
- */
-typedef short intcps_mapping_id_t;
+#define UART1_INTCPS_MAPPING_ID				72
+#define UART2_INTCPS_MAPPING_ID				73
+#define UART3_INTCPS_MAPPING_ID				74
+
 
 /*
  * Call this to activate the interrupt line for this interrupt line
  * associated with this inctps_mapping_id
  */
-void intcps_active_interrupt_line(intcps_mapping_id_t id);
+void intcps_active_interrupt_line(int interrupt_line_id);
 
 /*
  * Call this to enable generation of new interrupt requests, after an interrupt has been handled.
