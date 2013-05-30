@@ -10,5 +10,7 @@
 
 #include "process.h"
 #include "devices.h"
+#include "mmu.h"
+#include "ram_manager.h"
 
 #endif /* OMAP3530_PLATFORM_H_ */

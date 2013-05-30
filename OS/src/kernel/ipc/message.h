@@ -10,8 +10,10 @@
 #ifndef MESSAGE_H_
 #define MESSAGE_H_
 
+typedef struct _message_t message_t;
 
-typedef int32_t ProcessId_t; /* forward declaration instead of #include "../process.h" to avoid circular inclusion */
+#include "../process/process.h"
+//typedef int32_t ProcessId_t; /* forward declaration instead of #include "../process.h" to avoid circular inclusion */
 
 #define BUFFER_SIZE 100
 #define DATA_SIZE BUFFER_SIZE / sizeof(unsigned int)
@@ -21,7 +23,7 @@ typedef enum {
 	MESSAGE_TYPE_DATA
 } message_type_t;
 
-typedef struct {
+struct _message_t {
 	ProcessId_t source;
 	ProcessId_t destination;
 	union {
@@ -30,6 +32,6 @@ typedef struct {
 	} value;
 	uint8_t size;
 	message_type_t type;
-} message_t;
+};
 
 #endif /* MESSAGE_H_ */

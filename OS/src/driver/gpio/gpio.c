@@ -6,8 +6,8 @@
  */
 
 #include "gpio.h"
-#include "../../kernel/process.h"
-#include "../../kernel/process_manager.h"
+#include "../../kernel/process/process.h"
+#include "../../kernel/process/process_manager.h"
 #include "../../devices/device.h"
 #include "../../kernel/ipc/ipc.h"
 #include "../../service/logger/logger.h"
@@ -53,7 +53,7 @@ uint32_t gpio_main(void) {
 static Process_t gpio_process;
 ProcessId_t gpio_start_driver_process(Device_t device) {
 	gpio_process.func = &gpio_main;
-	gpio_process.priority = MEDIUM;
+	gpio_process.priority = PROCESS_PRIORITY_HIGH;
 	gpio_process.state = PROCESS_READY;
 	gpio_process.name = malloc(10);
 	if (gpio_process.name == NULL) {

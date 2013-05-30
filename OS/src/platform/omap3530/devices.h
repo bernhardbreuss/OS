@@ -5,8 +5,8 @@
  *      Author: Bernhard
  */
 
-#ifndef DEVICES_H_
-#define DEVICES_H_
+#ifndef PLATFORM_OMAP3530_DEVICES_H_
+#define PLATFORM_OMAP3530_DEVICES_H_
 
 #define GPIO1	1
 #define GPIO2	2
@@ -21,4 +21,4 @@
 #define DEVICES { GPIO5, LED0, LED1 }
 
 
-#endif /* DEVICES_H_ */
+#endif /* PLATFORM_OMAP3530_DEVICES_H_ */

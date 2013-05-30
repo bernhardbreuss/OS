@@ -6,7 +6,6 @@
  */
 
 #include "driver_manager.h"
-#include "../hal/platform.h"
 #include "../devices/device.h"
 #include "../util/linked_list.h"
 #include <stdlib.h>

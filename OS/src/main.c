@@ -6,8 +6,8 @@
 #include "service/logger/logger.h"
 #include "hal/generic/timer/gptimer.h"
 #include "hal/generic/pwm/pwm.h"
-#include "kernel/process.h"
-#include "kernel/process_manager.h"
+#include "kernel/process/process.h"
+#include "kernel/process/process_manager.h"
 #include "driver/driver_manager.h" /* TODO: move to kernel */
 #include "kernel/ipc/ipc.h"
 #include "tests/pwm_test.h"
@@ -15,6 +15,7 @@
 #include "kernel/loader/elf.h"
 #include "kernel/loader/loader.h"
 #include "binary.h"
+#include "kernel/mmu/mmu.h"
 
 #pragma INTERRUPT(udef_handler, UDEF);
 interrupt void udef_handler() {
@@ -64,10 +65,6 @@ uint32_t led1(void) {
 		for(i = 0; i < 900000; i++);
 		*(GPIO5_OUT) ^= LED1_PIN;
 	}
-}
-
-uint32_t idle_task(void) {
-	while (1) ; /* TODO: look manual for HALT command or similar to reduce power consumption */
 }
 
 void turnoff_rgb(void) {
@@ -127,6 +124,9 @@ uint32_t BB_read(void* ident, void* dst, uint32_t offset, size_t length) {
 extern Driver_t gpio_driver;
 ProcessId_t gpio_start_driver_process(Device_t device);
 void main(void) {
+	ram_manager_init();
+	mmu_table_t* page_table = mmu_init();
+
 	logger_init();
 	logger_debug("\r\n\r\nSystem init...");
 	logger_logmode();
@@ -148,13 +148,11 @@ void main(void) {
 
 	/* init led stuff */
 	turnoff_rgb();
-	#define GPIO5_DIR  			(unsigned int*) 0x49056094
-	*(GPIO5_DIR) |= LED0_PIN | LED1_PIN;
 
 	driver_manager_init();
 	driver_manager_add_driver(GPIO5, &gpio_driver, &gpio_start_driver_process);
 
-	process_manager_init();
+	process_manager_init(page_table);
 
 	process1.func = &ipc_process1;
 	process1.name = "LED 0 (IPC, fast)";
@@ -164,12 +162,6 @@ void main(void) {
 	process2.name = "LED 1 (slow)";
 	process_manager_add_process(&process2);
 
-	/* idle task */
-	Process_t idle_process;
-	idle_process.func = &idle_task;
-	idle_process.name = "idle process";
-	process_manager_add_process(&idle_process);
-
-	/* start scheduling */
-	process_manager_start_scheduling();
+	/* TODO: start IPC */
+	while (1) ;
 }

@@ -8,8 +8,7 @@
 #ifndef PROCESS_CONTEXT_H_
 #define PROCESS_CONTEXT_H_
 
-#include "../../../kernel/process.h"
-#include "../../platform.h"
+#include "../../../kernel/process/process.h"
 
 void process_context_save();
 void process_context_load();

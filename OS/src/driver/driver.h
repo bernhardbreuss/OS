@@ -11,7 +11,6 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include "../devices/device.h"
-#include "../kernel/process.h"
 #include "../kernel/ipc/message.h"
 
 typedef struct _Driver_t {

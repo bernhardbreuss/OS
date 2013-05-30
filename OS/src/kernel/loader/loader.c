@@ -7,8 +7,14 @@
 
 #include "loader.h"
 #include <string.h>
+#include "../process/process_manager.h"
 
-uint32_t loader_load(binary_t* binary, void* address, size_t length) {
+uint32_t loader_load(void* address, size_t length) {
+	binary_t* binary = process_manager_get_binary();
+	if (binary == NULL) {
+		return 0;
+	}
+
 	binary_section_t* section;
 	linked_list_node_t* node = binary->sections.head;
 	uint32_t sections_loaded = 0;

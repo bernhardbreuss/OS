@@ -9,6 +9,7 @@
 #define BINARY_H_
 
 #include "../../util/linked_list.h"
+#include <stdlib.h>
 
 #define PROTECTION_FLAG_X	0x1
 #define PROTECTION_FLAG_W	0x2

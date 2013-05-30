@@ -9,7 +9,9 @@
 #define PS_H_
 
 #include <inttypes.h>
-#include "../hal/platform.h"
+#include "../../platform/platform.h"
+#include "../mmu/mmu.h"
+#include "../loader/binary.h"
 
 typedef uint32_t (*process_func)(void);
 typedef int32_t ProcessId_t;
@@ -26,12 +28,12 @@ typedef enum {
 } ProcessState_t;
 
 typedef enum {
-	HIGH,
-	MEDIUM,
-	LOW
+	PROCESS_PRIORITY_HIGH = 0,
+	PROCESS_PRIORITY_LOW = 1
 } ProcessPriority_t;
+#define PROCESS_PRIORITY_COUNT 2
 
-#include "ipc/message.h" /* do not move this up! otherwise circular includion will happen. */
+#include "../ipc/message.h" /* do not move this up! otherwise circular inclusion will happen. */
 
 typedef struct {
 	ProcessId_t pid;
@@ -41,10 +43,13 @@ typedef struct {
 		ProcessId_t other;
 		uint8_t call_type;
 		message_t* msg;
+		linked_list_t sender;
 	} ipc;
 	ProcessPriority_t priority;
 	void* saved_context[PROCESS_CONTEXT_SIZE];
 	char* name;
+	binary_t* binary;
+	mmu_table_t* page_table;
 } Process_t;
 
 #endif /* PS_H_ */
