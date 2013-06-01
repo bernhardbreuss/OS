@@ -16,7 +16,9 @@
 #include "kernel/loader/elf.h"
 #include "kernel/loader/loader.h"
 #include "kernel/mmu/mmu.h"
+#include "kernel/mmu/ram_manager.h"
 #include "service/serial_service.h"
+#include "hal/generic/irq/irq.h"
 
 #pragma INTERRUPT(udef_handler, UDEF);
 interrupt void udef_handler() {
@@ -107,13 +109,6 @@ uint32_t ipc_process1(void) {
 }
 
 uart_t uart3;
-uint32_t uart3_read_process(void) {
-	while(1) {
-		char buff[1];
-		serial_service_read(&uart3, &buff[0], 1);
-		logger_debug("Received: %c", buff[0]);
-	}
-}
 
 uint32_t BB_read(void* ident, void* dst, uint32_t offset, size_t length) {
 #ifndef BINARY_BeagleBlink_out /* ensure that everyone can build */
@@ -129,6 +124,11 @@ uint32_t BB_read(void* ident, void* dst, uint32_t offset, size_t length) {
 	return 1;
 }
 
+void uart3_irq_handler(void);
+void uart3_irq_handler(void) {
+	char received_char = *((char*) 0x49020000);
+	logger_debug("UART3 - Received a character: %c", received_char);
+}
 
 extern Driver_t gpio_driver;
 ProcessId_t gpio_start_driver_process(Device_t device);
@@ -139,13 +139,13 @@ void main(void) {
 	/* logger_init() */
 	uart_get(3, &uart3);
 	uart_protocol_format_t protocol;
-	protocol.baudrate = 0x001A;
+	protocol.baudrate = 0x0138;	//9.6 Kbps
 	protocol.stopbit = 0x0;		//1 stop bit
 	protocol.datalen = 0x3;		//length 8
 	protocol.use_parity = 0x0;
-	uart_init(&uart3, 0x00, protocol, 0x00);
+	uart_init(&uart3, 0x00, protocol);
 
-	logger_debug("\r\n\r\nSystem init...");
+	logger_debug("\r\n\r\nSystem initialize ...");
 	logger_logmode();
 
 	/* Loader test stuff
@@ -179,9 +179,7 @@ void main(void) {
 	process2.name = "LED 1 (slow)";
 	process_manager_add_process(&process2);
 
-	process3.func = &uart3_read_process;
-	process3.name = "UART Poll";
-	process_manager_add_process(&process3);
+	irq_add_handler(UART3_INTCPS_MAPPING_ID, &uart3_irq_handler);
 
 	/* TODO: start IPC */
 	while (1) ;

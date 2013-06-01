@@ -12,5 +12,6 @@
 
 void* ram_manager_reserve(size_t size);
 void* ram_manager_reserve_aligned(size_t size, unsigned int alignment);
+void ram_manager_init(void);
 
 #endif /* RAM_MANAGER_H_ */
