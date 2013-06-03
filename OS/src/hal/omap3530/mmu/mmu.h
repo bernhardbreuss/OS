@@ -33,7 +33,8 @@
 
 #define MMU_DOMAIN 0 /* --> Domain 0 */
 
-#define MMU_FIRST_LEVEL_AP BIT10 /* read/write access in privileged mode else no access */
+#define MMU_FIRST_LEVEL_KERNEL_AP BIT10 /* read/write access in privileged mode else no access */
+#define MMU_FIRST_LEVEL_USER_AP (BIT11 | BIT10) /* read/write access in privileged mode and user mode */
 #define MMU_SECOND_LEVEL_AP (BIT4 | BIT5) /* read/write access in privileged mode and user mode */
 
 #define MMU_FIRST_LEVEL_NOT_GLOBAL BIT17
@@ -43,5 +44,20 @@
 
 #define MMU_SECTION_SIZE	((~MMU_SECTION_MASK) + 1)
 #define MMU_SMALL_PAGE_SIZE	((~MMU_SMALL_PAGE_MASK) + 1)
+
+void mmu_ttbr_set0(unsigned int value, unsigned int contextidr);
+void mmu_ttbr_set1(unsigned int value);
+
+unsigned int mmu_get_ifsr(void);
+void* mmu_get_ifar(void);
+unsigned int mmu_get_dfsr(void);
+void* mmu_get_dfar(void);
+
+#define MMU_ABORT_TRANSLATION_FAULT_SECTION 0x5
+#define MMU_ABORT_TRANSLATION_FAULT_PAGE 0x7
+#define MMU_ABORT_DEBUG 0x2
+
+#define MMU_ABORT_MASK 0x140F
+
 
 #endif /* OMAP3530_MMU_H_ */

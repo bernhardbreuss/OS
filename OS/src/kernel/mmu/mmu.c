@@ -28,12 +28,11 @@ mmu_table_t* mmu_init(void) {
 
 		int j;
 		for (j = start; j < end; j += MMU_KERNEL_PAGE_SIZE) {
-			if (!mmu_map(table, (void*)j, (void*)j)) {
-				free(table); /* TODO: create mmu_destroy function */
-				return NULL;
-			}
+			mmu_map(table, (void*)j, (void*)j);
 		}
 	}
+
+	mmu_init_hal();
 
 	return table;
 }

@@ -10,7 +10,7 @@
 #include "../process/process_manager.h"
 
 uint32_t loader_load(void* address, size_t length) {
-	binary_t* binary = process_manager_get_binary();
+	binary_t* binary = process_manager_current_process->binary;
 	if (binary == NULL) {
 		return 0;
 	}

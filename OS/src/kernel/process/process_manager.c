@@ -31,7 +31,7 @@ Process_t* process_manager_current_process;
 void* process_context_pointer;
 
 static uint32_t idle_task(void) {
-	while (1) ; /* TODO: look manual for HALT command or similar to reduce power consumption */
+	while (1) ;
 }
 
 void process_manager_init(mmu_table_t* kernel_page_table) {
@@ -57,8 +57,7 @@ void process_manager_init(mmu_table_t* kernel_page_table) {
 	linked_list_add(&ready_processes[kernel.priority], &kernel);
 	nextProcessId = 1;
 
-
-	/* TODO: start mmu */
+	mmu_start();
 
 	/* start idle process */
 	static Process_t idle_process;
@@ -72,6 +71,65 @@ void process_manager_init(mmu_table_t* kernel_page_table) {
 	irq_add_handler(_schedule_timer.interrupt_line_id, &_process_manager_irq_schedule_handler);
 	gptimer_schedule_timer_init(&_schedule_timer);
 	gptimer_start(&_schedule_timer);
+}
+
+static ProcessId_t _process_manager_start_process(Process_t* process, mmu_table_t* page_table, char* name, ProcessPriority_t priority) {
+	process->name = name;
+	process->ipc.call_type = IPC_NOOP;
+	linked_list_init(&process->ipc.sender);
+	process->page_table = page_table;
+	process->priority = priority;
+
+	process->pid = nextProcessId++;
+	linked_list_add(&processes, process);
+	linked_list_add(&ready_processes[priority], process);
+
+	return process->pid;
+}
+
+ProcessId_t process_manager_start_process_byfunc(process_func func, char* name, ProcessPriority_t priority, unsigned int virtual_address, unsigned int physical_address, unsigned int size) {
+	Process_t* process = malloc(sizeof(Process_t));
+	if (process == NULL) {
+		return INVALID_PROCESS_ID;
+	}
+	mmu_table_t* page_table = mmu_init_process(0);
+	if (page_table == NULL) {
+		free(process);
+		return INVALID_PROCESS_ID;
+	}
+
+	unsigned int end_address = virtual_address + (unsigned int)size;
+	while (virtual_address < end_address) {
+		unsigned int mapped = mmu_map(page_table, (void*)virtual_address, (void*)physical_address);
+		if (mapped == 0) {
+			/* TODO: destroy page table */
+			free(process);
+			return INVALID_PROCESS_ID;
+		}
+
+		virtual_address += mapped;
+		physical_address += mapped;
+	}
+
+	process->binary = NULL;
+	process_context_init_byfunc(process, func);
+	return _process_manager_start_process(process, page_table, name, priority);
+}
+
+ProcessId_t process_manager_start_process_bybinary(binary_t* binary, char* name, ProcessPriority_t priority) {
+	Process_t* process = malloc(sizeof(Process_t));
+	if (process == NULL) {
+		return INVALID_PROCESS_ID;
+	}
+	mmu_table_t* page_table = mmu_init_process(0);
+	if (page_table == NULL) {
+		free(process);
+		return INVALID_PROCESS_ID;
+	}
+
+	process->binary = binary;
+	process_context_init_bybinary(process, binary);
+	return _process_manager_start_process(process, page_table, name, priority);
 }
 
 ProcessId_t process_manager_add_process(Process_t *theProcess) {
@@ -107,6 +165,8 @@ void process_manager_change_process(Process_t* process) {
 	process_context_pointer = process->saved_context;
 	process->state = PROCESS_RUNNING;
 	process_manager_current_process = process;
+
+	mmu_activate_process(process);
 
 	logger_debug("Current process: #%u %s", process->pid, process->name);
 }
@@ -145,14 +205,6 @@ Process_t* _process_manager_scheduler_get_next_process(void) {
 	}
 
 	return NULL;
-}
-
-binary_t* process_manager_get_binary(void) {
-	if (process_manager_current_process == NULL) {
-		return NULL;
-	}
-
-	return process_manager_current_process->binary;
 }
 
 void process_manager_set_process_ready(Process_t* process) {

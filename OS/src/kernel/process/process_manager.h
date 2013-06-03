@@ -28,6 +28,9 @@ void process_manager_start_scheduling(void);
  */
 ProcessId_t process_manager_add_process(Process_t *theProcess);
 
+ProcessId_t process_manager_start_process_byfunc(process_func func, char* name, ProcessPriority_t priority, unsigned int virtual_address, unsigned int physical_address, unsigned int size);
+ProcessId_t process_manager_start_process_bybinary(binary_t* binary, char* name, ProcessPriority_t priority);
+
 void process_manager_change_process(Process_t* process);
 
 ProcessId_t process_manager_get_process(process_name_t processName);
@@ -35,8 +38,6 @@ ProcessId_t process_manager_get_process(process_name_t processName);
 uint32_t process_manager_start_managing(ProcessId_t processId);
 
 Process_t* process_manager_get_process_byid(ProcessId_t id);
-
-binary_t* process_manager_get_binary(void);
 
 void process_manager_set_process_ready(Process_t* process);
 

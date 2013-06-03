@@ -13,11 +13,14 @@
     .global ARGS_MAIN_RTN
     .global __TI_auto_init
 
+	.global interruptvectors
 
 	.global stackIRQ
 	.global stackSupervisor
 	.global stackAbort
 	.global stackSystem
+
+_interruptvectors	.long	interruptvectors
 
 _stackIRQ			.long	stackIRQ
 _stackSupervisor	.long	stackSupervisor
@@ -42,6 +45,9 @@ _c_int00: .asmfunc
     CPS	0x1F
     LDR	sp, _stackSystem
 
+	; set Vector Base Address Register out of user space
+	LDR R0, _interruptvectors
+	MCR p15, #0, R0, c12, c0, #0
 
     ; Enable Interrupts
     MRS   R12, CPSR

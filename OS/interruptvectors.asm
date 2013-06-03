@@ -1,3 +1,4 @@
+	.global _c_int00
 	.global udef_handler
 	.global swi_handler
 	.global pabt_handler
@@ -6,6 +7,7 @@
 
 	.sect ".interruptvectors"
 		; See OMAP35x.pdf Page 3437 Table 23-10. RAM Exception Vectors
+		B _c_int00		; Reset						0x4020FFC4
 		B udef_handler	; Interrupt Undefined		0x4020FFC8
 		B swi_handler	; Interrupt SWI				0x4020FFCC
 		B pabt_handler	; Interrupt Prefetch Abort	0x4020FFD0

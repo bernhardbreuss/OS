@@ -17,24 +17,11 @@
 #include "kernel/loader/loader.h"
 #include "kernel/mmu/mmu.h"
 #include "service/serial_service.h"
+//#include "binary.h"
 
 #pragma INTERRUPT(udef_handler, UDEF);
 interrupt void udef_handler() {
 	logger_error("KERNEL PANIC: udef handler.");
-	while(1);
-}
-
-#pragma INTERRUPT(pabt_handler, PABT);
-interrupt void pabt_handler() {
-	logger_error("KERNLE PANIC: Prefetch abort.");
-	while(1);
-}
-
-#pragma INTERRUPT(dabt_handler, DABT);
-interrupt void dabt_handler() {
-	//the address of the disassemble instruction where the data abort happened
-	//is located at (R14_ABT-8) see "Table 9.4" in "Arm System Developers Guide"
-	logger_error("KERNEL PANIC: data abort");
 	while(1);
 }
 
@@ -129,6 +116,10 @@ uint32_t BB_read(void* ident, void* dst, uint32_t offset, size_t length) {
 	return 1;
 }
 
+extern uint32_t led1_user(void);
+extern unsigned int led1_user_virtual;
+extern unsigned int led1_user_physical;
+extern unsigned int led1_user_size;
 
 extern Driver_t gpio_driver;
 ProcessId_t gpio_start_driver_process(Device_t device);
@@ -148,20 +139,10 @@ void main(void) {
 	logger_debug("\r\n\r\nSystem init...");
 	logger_logmode();
 
-	/* Loader test stuff
-	binary_t* binary = elf_init(NULL, BB_read);
-	if (loader_load(binary, (void*)0x83000000, 0x254C)) {
-		logger_debug("binary loaded");
-		void (*main_func)(void) = (void(*)(void))((unsigned int)binary->entry_point);
-		main_func();
-	} else {
-		logger_debug("oO :(");
-	}
-	return; */
 
 
-	asm("\t CPS #0x10");
-	logger_logmode();
+	/*asm("\t CPS #0x10");
+	logger_logmode();*/
 
 	/* init led stuff */
 	turnoff_rgb();
@@ -175,14 +156,20 @@ void main(void) {
 	process1.name = "LED 0 (IPC, fast)";
 	process_manager_add_process(&process1);
 
-	process2.func = &led1;
+	/*process2.func = &led1_user;
 	process2.name = "LED 1 (slow)";
-	process_manager_add_process(&process2);
+	process_manager_add_process(&process2);*/
+	process_manager_start_process_byfunc(&led1_user, "LED1 User", PROCESS_PRIORITY_HIGH, (unsigned int)&led1_user_virtual, (unsigned int)&led1_user_physical, (unsigned int)&led1_user_size);
+
+	/* Loader test stuff
+	binary_t* binary = elf_init(NULL, BB_read);
+	process_manager_start_process_bybinary(binary, "BeagleBlink", PROCESS_PRIORITY_HIGH);*/
 
 	process3.func = &uart3_read_process;
 	process3.name = "UART Poll";
 	process_manager_add_process(&process3);
 
+	logger_debug("Kernel started ...");
 	/* TODO: start IPC */
 	while (1) ;
 }
