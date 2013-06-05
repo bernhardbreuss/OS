@@ -11,6 +11,7 @@
 #include "mmu.h"
 #include "../../generic/mmu/mmu.h"
 #include "../../../platform/platform.h"
+#include "../../../service/logger/logger.h"
 #include "../../../kernel/mmu/ram_manager.h"
 #include "../../../kernel/loader/loader.h"
 #include "../../../kernel/process/process.h"
