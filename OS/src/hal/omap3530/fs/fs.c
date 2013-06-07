@@ -6,7 +6,7 @@
  */
 
 #include "fs.h"
-#include "mmchs.h"
+#include "../../../platform/omap3530/mmchs.h"
 #include "../../../bit.h"
 #include "../../generic/fs/fs.h"
 #include "../../../service/logger/logger.h"

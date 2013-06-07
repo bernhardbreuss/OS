@@ -8,9 +8,8 @@
 #ifndef OMAP3530_FS_H_
 #define OMAP3530_FS_H_
 
-#include "mmchs.h"
+#include "../../../platform/omap3530/mmchs.h"
 #include "../../../bit.h"
-// FIXME move this to platform.
 #include "../../generic/fs/fs.h"
 
 /* - ------------------------ -

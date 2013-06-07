@@ -10,9 +10,7 @@
 
 #include <stdio.h>
 #include "fat_io_lib/fat_filelib.h"
-
-// FIXME move this to "platform.h"
-#include "../../omap3530/fs/mmchs.h"
+#include "../../../platform/omap3530/mmchs.h"
 
 
 #define SUCCESS 0
@@ -39,7 +37,7 @@ typedef struct _Protocol_t {
 } Protocol_t;
 
 typedef struct _FileHandle {
-	MMCHS_t* instance;				// associated with the above 'FIXME.'
+	MMCHS_t* instance;
 	StorageType_t storage_type;
 	Protocol_t* protocol_type;
 } FileHandle_t;
