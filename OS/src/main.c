@@ -12,7 +12,7 @@
 #include "driver/driver_manager.h" /* TODO: move to kernel */
 #include "kernel/ipc/ipc.h"
 #include "tests/pwm_test.h"
-#include "kernel/kernel.h"
+#include "tests/ring_buffer_test.h"
 #include "kernel/loader/binary.h"
 #include "kernel/loader/elf.h"
 #include "kernel/loader/loader.h"
@@ -133,7 +133,7 @@ void main(void) {
 	/* logger_init() */
 	uart_get(3, &uart3);
 	uart_protocol_format_t protocol;
-	protocol.baudrate = 0x001A; //115.2Kbps		138;	//9.6 Kbps
+	protocol.baudrate = 0x0138; //115.2Kbps		138;	//9.6 Kbps
 	protocol.stopbit = 0x0;		//1 stop bit
 	protocol.datalen = 0x3;		//length 8
 	protocol.use_parity = 0x0;
@@ -142,7 +142,7 @@ void main(void) {
 	logger_debug("\r\n\r\nSystem initialize ...");
 	logger_logmode();
 
-
+	run_ring_buffer_tests();
 
 	/*asm("\t CPS #0x10");
 	logger_logmode();*/
@@ -172,5 +172,5 @@ void main(void) {
 
 	logger_debug("Kernel started ...");
 	/* TODO: start IPC */
-	kernel_main_loop() ;
+	while (1) ;
 }
