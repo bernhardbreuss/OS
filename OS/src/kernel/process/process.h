@@ -18,7 +18,7 @@ typedef int32_t ProcessId_t;
 
 #define PROCESS_ANY -2
 #define INVALID_PROCESS_ID -1 /* TODO: rename with prefix PROCESS ... */
-#define PROCESS_KERNEL 0
+#define PROCESS_KERNEL	0
 
 #define process_name_t char*
 

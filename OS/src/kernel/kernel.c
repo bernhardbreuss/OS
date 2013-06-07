@@ -29,26 +29,14 @@ static unsigned int kernel_start_process(void) {
 
 static unsigned int mem_io_read(message_t *msg){
 
-	unsigned int* address;
-	unsigned int address_data;
-
-	address = (unsigned int*) msg->value.data[2];
-	address_data = *address;
-	msg->value.data[1] =  address_data;
-
+	msg->value.data[1] = msg->value.data[2];
 	return KERNEL_OK;
 
 }
 
 static unsigned int mem_io_write(message_t *msg){
 
-	unsigned int* address;
-	unsigned int address_data;
-
-	address = (unsigned int*) msg->value.data[2];
-	address_data = msg->value.data[1];
-	*address = address_data;
-
+	msg->value.data[2] = msg->value.data[1];
 	return KERNEL_OK;
 }
 

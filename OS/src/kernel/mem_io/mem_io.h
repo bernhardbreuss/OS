@@ -10,7 +10,9 @@
 
 #include <inttypes.h>
 #include "../ipc/message.h"
-#include "../kernel.h"
+
+#define MEM_IO_READ 16
+#define MEM_IO_READ 17
 
 typedef struct {
 	uint32_t msg_type;
