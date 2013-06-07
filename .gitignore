@@ -23,3 +23,5 @@ OS/Debug
 org.eclipse.core.resources.prefs
 /Debug
 */.gitignore
+
+OS/src/binary.h
