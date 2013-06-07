@@ -8,7 +8,8 @@
  */
 
 #include "mem_io.h"
-#include "../ipc/ipc.h"
+#include <ipc.h>
+#include <stdlib.h>
 
 #define TRUE	0
 #define FALSE	1

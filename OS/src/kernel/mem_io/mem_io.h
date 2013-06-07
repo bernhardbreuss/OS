@@ -9,7 +9,7 @@
 #define MEM_IO_H_
 
 #include <inttypes.h>
-#include "../ipc/message.h"
+#include <message.h>
 
 #define MEM_IO_READ 16
 #define MEM_IO_WRITE 17
