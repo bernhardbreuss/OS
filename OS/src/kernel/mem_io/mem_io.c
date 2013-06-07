@@ -39,7 +39,7 @@ uint8_t memory_mapped_write(unsigned int msg, unsigned int* address){
 
 	message_t ipc_msg;
 	ipc_msg.value.data[0] = MEM_IO_WRITE;
-	ipc_msg.value.data[1] = *msg;
+	ipc_msg.value.data[1] = msg;
 	ipc_msg.value.data[2] = *address;
 	ipc_msg.size = 3;
 	ipc_msg.type = MESSAGE_TYPE_DATA;

@@ -12,7 +12,7 @@
 #include "../ipc/message.h"
 
 #define MEM_IO_READ 16
-#define MEM_IO_READ 17
+#define MEM_IO_WRITE 17
 
 typedef struct {
 	uint32_t msg_type;

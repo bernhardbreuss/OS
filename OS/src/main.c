@@ -13,6 +13,7 @@
 #include "kernel/ipc/ipc.h"
 #include "tests/pwm_test.h"
 #include "tests/ring_buffer_test.h"
+#include "kernel/kernel.h"
 #include "kernel/loader/binary.h"
 #include "kernel/loader/elf.h"
 #include "kernel/loader/loader.h"
