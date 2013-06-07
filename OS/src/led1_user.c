@@ -6,11 +6,12 @@
  */
 
 #include <inttypes.h>
+#include "kernel/mem_io/mem_io.h"
 
 #define LED1_PIN			(1 << 22)
 uint32_t led1_user(void) {
 	int i;
-	int gpio5;
+	unsigned int gpio5;
 	while (1) {
 		for(i = 0; i < 900000; i++);
 		memory_mapped_read(&gpio5, (unsigned int*) 0x4905603C);
