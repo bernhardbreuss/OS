@@ -14,7 +14,7 @@
 #ifndef TIMER_H_
 #define TIMER_H_
 
-#include "../../platform.h"
+#include "../../../platform/platform.h"
 
 /**
  * Call it to get the schedule timer which is able to work as millisecond precision timer.

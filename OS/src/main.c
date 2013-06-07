@@ -6,35 +6,27 @@
 #include "service/logger/logger.h"
 #include "hal/generic/timer/gptimer.h"
 #include "hal/generic/pwm/pwm.h"
-#include "hal/generic/uart/uart_new.h"
-#include "kernel/process.h"
-#include "kernel/process_manager.h"
-#include "driver/driver_manager.h" /* TODO: move to kernel */
-#include "kernel/ipc/ipc.h"
+#include "kernel/process/process.h"
+#include "kernel/process/process_manager.h"
+#include "hal/generic/uart/uart.h"
+#include "../driver_manager/driver_manager.h"
+#include <ipc.h>
 #include "tests/pwm_test.h"
+#include "tests/ring_buffer_test.h"
+#include "kernel/kernel.h"
 #include "kernel/loader/binary.h"
 #include "kernel/loader/elf.h"
 #include "kernel/loader/loader.h"
+#include "kernel/mmu/mmu.h"
+#include "kernel/mmu/ram_manager.h"
+#include "service/serial_service.h"
 //#include "binary.h"
-
+#include "hal/generic/irq/irq.h"
+#include "kernel/kernel.h"
 
 #pragma INTERRUPT(udef_handler, UDEF);
 interrupt void udef_handler() {
 	logger_error("KERNEL PANIC: udef handler.");
-	while(1);
-}
-
-#pragma INTERRUPT(pabt_handler, PABT);
-interrupt void pabt_handler() {
-	logger_error("KERNLE PANIC: Prefetch abort.");
-	while(1);
-}
-
-#pragma INTERRUPT(dabt_handler, DABT);
-interrupt void dabt_handler() {
-	//the address of the disassemble instruction where the data abort happened
-	//is located at (R14_ABT-8) see "Table 9.4" in "Arm System Developers Guide"
-	logger_error("KERNEL PANIC: data abort");
 	while(1);
 }
 
@@ -47,8 +39,7 @@ gptimer_t main_timer;
 #define GPIO_TOGGLE	0x2
 #define GPIO_OFF	0x3
 
-Process_t process1;
-Process_t process2;
+Process_t process1, process2, process3;
 
 uint32_t led0(void) {
 	int i;
@@ -66,10 +57,6 @@ uint32_t led1(void) {
 		for(i = 0; i < 900000; i++);
 		*(GPIO5_OUT) ^= LED1_PIN;
 	}
-}
-
-uint32_t idle_task(void) {
-	while (1) ; /* TODO: look manual for HALT command or similar to reduce power consumption */
 }
 
 void turnoff_rgb(void) {
@@ -111,6 +98,7 @@ uint32_t ipc_process1(void) {
 	}
 }
 
+uart_t uart3;
 
 uint32_t BB_read(void* ident, void* dst, uint32_t offset, size_t length) {
 #ifndef BINARY_BeagleBlink_out /* ensure that everyone can build */
@@ -126,57 +114,61 @@ uint32_t BB_read(void* ident, void* dst, uint32_t offset, size_t length) {
 	return 1;
 }
 
+extern uint32_t led1_user(void);
+extern unsigned int led1_user_virtual;
+extern unsigned int led1_user_physical;
+extern unsigned int led1_user_size;
+
+void uart3_irq_handler(void);
+void uart3_irq_handler(void) {
+	char received_char = *((char*) 0x49020000);
+	logger_debug("UART3 - Received a character: %c", received_char);
+}
+
+
 extern Driver_t gpio_driver;
 ProcessId_t gpio_start_driver_process(Device_t device);
 void main(void) {
-	logger_init();
-	logger_debug("\r\n\r\nSystem init...");
-	logger_logmode();
+	ram_manager_init();
+	mmu_table_t* page_table = mmu_init();
 
-	uart_t uart;
-	uart_new_get(2, &uart);
-	uart_new_software_reset(&uart);
+	/* logger_init() */
+	uart_get(3, &uart3);
+	uart_protocol_format_t protocol;
+	protocol.baudrate = 0x0138; //115.2Kbps		138;	//9.6 Kbps
+	protocol.stopbit = 0x0;		//1 stop bit
+	protocol.datalen = 0x3;		//length 8
+	protocol.use_parity = 0x0;
+	uart_init(&uart3, 0x00, protocol);
 
-
-	/* Loader test stuff
-	binary_t* binary = elf_init(NULL, BB_read);
-	if (loader_load(binary, (void*)0x83000000, 0x254C)) {
-		logger_debug("binary loaded");
-		void (*main_func)(void) = (void(*)(void))((unsigned int)binary->entry_point);
-		main_func();
-	} else {
-		logger_debug("oO :(");
-	}
-	return; */
-
-
-	asm("\t CPS #0x10");
+	logger_debug("\r\n\r\nSystem initialize ...");
 	logger_logmode();
 
 	/* init led stuff */
 	turnoff_rgb();
-	#define GPIO5_DIR  			(unsigned int*) 0x49056094
-	*(GPIO5_DIR) |= LED0_PIN | LED1_PIN;
 
-	driver_manager_init();
-	driver_manager_add_driver(GPIO5, &gpio_driver, &gpio_start_driver_process);
+	process_manager_init(page_table);
 
-	process_manager_init();
+	/*driver_manager_init();
+	driver_manager_add_driver(GPIO5, &gpio_driver, &gpio_start_driver_process);*/
+
 
 	process1.func = &ipc_process1;
 	process1.name = "LED 0 (IPC, fast)";
 	process_manager_add_process(&process1);
 
-	process2.func = &led1;
+	/*process2.func = &led1_user;
 	process2.name = "LED 1 (slow)";
-	process_manager_add_process(&process2);
+	process_manager_add_process(&process2);*/
+	process_manager_start_process_byfunc(&led1_user, "LED1 User", PROCESS_PRIORITY_HIGH, (unsigned int)&led1_user_virtual, (unsigned int)&led1_user_physical, (unsigned int)&led1_user_size);
 
-	/* idle task */
-	Process_t idle_process;
-	idle_process.func = &idle_task;
-	idle_process.name = "idle process";
-	process_manager_add_process(&idle_process);
+	/* Loader test stuff
+	binary_t* binary = elf_init(NULL, BB_read);
+	process_manager_start_process_bybinary(binary, "BeagleBlink", PROCESS_PRIORITY_HIGH);*/
 
-	/* start scheduling */
-	process_manager_start_scheduling();
+	irq_add_handler(UART3_INTCPS_MAPPING_ID, &uart3_irq_handler);
+
+	logger_debug("Kernel started ...");
+
+	kernel_main_loop();
 }

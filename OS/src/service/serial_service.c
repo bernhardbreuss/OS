@@ -5,27 +5,14 @@
  *      Author: lumannnn
  */
 
-#include "../hal/uart/uart.h"
+#include "../hal/generic/uart/uart.h"
 #include "serial_service.h"
 
 #define FALSE 0
 #define TRUE 1
 #define FINAL_CHAR '\0'
 
-extern int init_uart_rs232_ = FALSE;
-
-void serial_service_init() {
-	if (init_uart_rs232_ == FALSE) {
-		uart_init((mem_address_t*) UART3, UART_MODE_16X, uart_protocol_rs232,
-				UART_FLOW_CONTROL_DISABLE_FLAG);
-		init_uart_rs232_ = TRUE;
-		return;
-	}
-	return;
-}
-
-void serial_service_write(char* buffer, int count) {
-	mem_address_t* uart = (mem_address_t*) UART3;
+void serial_service_write(uart_t* const uart, char* buffer, int count) {
 	int i = 0;
 
 	for (; i < count; i++, buffer++) {
@@ -38,8 +25,7 @@ void serial_service_write(char* buffer, int count) {
 	return;
 }
 
-int serial_service_read(char* buffer, int count) {
-	mem_address_t* uart = (mem_address_t*) UART3;
+int serial_service_read(uart_t* const uart, char* buffer, int count) {
 	int i = 0;
 
 	for (; i < count; i++) {

@@ -8,7 +8,6 @@
 #ifndef OMAP3530_IRQ_H_
 #define OMAP3530_IRQ_H_
 
-#include "../process.h"
 #include "../mpu_subsystem/intcps.h"
 
 #pragma INTERRUPT(irq_handler, IRQ);

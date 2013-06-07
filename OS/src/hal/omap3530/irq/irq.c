@@ -41,7 +41,7 @@ void irq_handle_interrupt(void) {
 	//mask the bits [31-7] to get this 6 bits only
 	//see Omap3530x.pdf page 1082
 	int currently_active_irq = *((unsigned int*) INTCPS_SIR_IRQ);
-	currently_active_irq &= 0x3F;
+	currently_active_irq &= 0x7F;
 
 	//logger_log_register("IRQ module SIR_FIQ: %s", ((unsigned int*) INTCPS_SIR_IRQ));
 

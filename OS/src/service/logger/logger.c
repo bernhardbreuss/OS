@@ -10,6 +10,7 @@
 
 #include "logger.h"
 #include "../serial_service.h"
+#include "../../hal/generic/uart/uart.h"
 
 #include <stdio.h>
 
@@ -23,10 +24,7 @@
 	}
 
 inline void log(char* type, char* format, va_list arglist);
-
-void logger_init() {
-	serial_service_init();
-}
+extern uart_t uart3;
 
 void logger_debug(char* format, ...) {
 	LOG("DEBUG:\t", format)
@@ -54,8 +52,9 @@ void log(char* type, char* format, va_list arglist) {
 	buffer[l + 1] = '\n';
 	buffer[l + 2] = '\0';
 
-	serial_service_write(type, strlen(type));
-	serial_service_write(buffer, (l + 2));
+	//TODO: send log messages to terminal application
+	serial_service_write(&uart3, type, strlen(type));
+	serial_service_write(&uart3, buffer, (l + 2));
 }
 
 void logger_logmode(void) {

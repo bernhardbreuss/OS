@@ -6,7 +6,7 @@
  */
 
 
-#include "../hal/platform.h"
+#include "../platform/platform.h"
 #include "../hal/generic/timer/gptimer.h"
 #include "../hal/generic/pwm/pwm.h"
 

@@ -6,14 +6,13 @@
  */
 
 #include "ipc.h"
-#include "../process.h"
-#include "../process_manager.h"
-#include "../../driver/driver_manager.h"
+#include <process.h>
+#include "../process/process_manager.h"
 
 uint32_t ipc_syscall_device(Device_t device, uint8_t call_type, message_t* msg) {
 	//get the process for this driver
 	//the getter starts the process internally if not running currently
-	ProcessId_t process_id = driver_manager_get_process(device);
+	ProcessId_t process_id = INVALID_PROCESS_ID; // TODO: driver_manager_get_process(device);
 	if (process_id != INVALID_PROCESS_ID) {
 		return ipc_syscall(process_id, call_type, msg); //send message via software interrupt
 	} else {
@@ -27,13 +26,11 @@ void copy_msg(Process_t* src, Process_t* dst) {
 	memcpy(dst->ipc.msg, src->ipc.msg, sizeof(message_t));
 }
 
-//TODO: ask the manager
-extern Process_t* processSlots[MAX_PROCESSES];
 uint32_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
-	Process_t* src = process_manager_get_current_process();
+	Process_t* src = process_manager_current_process;
 	Process_t* dst = NULL;
 
-	if (call_type != IPC_RECEIVE || o != PROCESS_ANY) { /* TODO: allow ANY only on receive? */
+	if (call_type != IPC_RECEIVE || o != PROCESS_ANY) { /* allow ANY only on receive */
 		dst = process_manager_get_process_byid(o);
 
 		if (dst == NULL) {
@@ -45,10 +42,13 @@ uint32_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 	src->ipc.other = o;
 	src->ipc.msg = msg;
 
+
 	switch (call_type) {
 		case IPC_SEND:
 		case IPC_SENDREC: /* SEND is falling through here */
+			_disable_interrupts(); /* TODO: Stephan, pls check */
 			if (dst->state == PROCESS_BLOCKED && (dst->ipc.other == src->pid || dst->ipc.other == PROCESS_ANY)) {
+				_enable_interrupts();
 				/* both process are now BLOCKED */
 
 				if (dst->ipc.call_type & IPC_SEND) {
@@ -58,13 +58,14 @@ uint32_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 				copy_msg(src, dst);
 				src->ipc.call_type = IPC_RECEIVE; /* prepare for receiving */
 				dst->ipc.call_type = IPC_NOOP;
-				dst->state = PROCESS_READY;
+				process_manager_set_process_ready(dst);
 			} else {
-				/* place msg for later delivery */
-				src->state = PROCESS_BLOCKED;
+				/* place msg for later delivery into the IPC queue of the destination */
+				linked_list_add(&dst->ipc.sender, src);
 
 				/* pause process */
-				process_manager_block_current_process(dst->pid);
+				process_manager_block_current_process(dst);
+				_enable_interrupts();
 			}
 
 			/* msg delivered, falling through receive except for send only */
@@ -74,37 +75,30 @@ uint32_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 			}
 
 		case IPC_RECEIVE: /* SENDREC and SEND are falling through here */
+			_disable_interrupts(); /* TODO: Stephan, pls check */
 			if (dst == NULL) {
 				/* receiving from ANY, maybe someone is already sending to this process */
 
-				_disable_interrupts(); /* TODO: is this really necessary? */
-				int i;
-				for (i = 0; i < MAX_PROCESSES; i++) {
-					Process_t* p = processSlots[i];
-					if (p != NULL && p->state == PROCESS_BLOCKED && p->ipc.other == src->pid) {
-						/* found a process which is sending to this process */
-						dst = p;
-						_enable_interrupts();
-						break;
-					}
+				linked_list_node_t* node = linked_list_pop_head(&src->ipc.sender);
+				if (node != NULL) {
+					dst = node->value;
+					free(node);
 				}
-			}
+			} /* TODO: else check if sender is in sender list and remove if necessary */
 			if (dst != NULL && dst->state == PROCESS_BLOCKED && dst->ipc.other == src->pid) {
 				/* both process are now BLOCKED */
+				_enable_interrupts();
 
 				if (dst->ipc.call_type == IPC_RECEIVE) {
 					return IPC_DEADLOCK;
 				}
 
 				copy_msg(dst, src);
-				dst->state = PROCESS_READY;
+				process_manager_set_process_ready(dst);
 			} else {
 				/* wait for msg delivery */
-				src->state = PROCESS_BLOCKED;
+				process_manager_block_current_process(dst);
 				_enable_interrupts();
-
-				/* pause process */
-				process_manager_block_current_process(dst != NULL ? dst->pid : INVALID_PROCESS_ID);
 
 				/* msg received */
 			}

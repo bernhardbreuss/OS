@@ -3,6 +3,9 @@
 	<name>OS</name>
 	<comment></comment>
 	<projects>
+		<project>util</project>
+		<project>api</project>
+		<project>driver_manager</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

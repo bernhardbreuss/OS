@@ -17,6 +17,6 @@
  * contain information to load, these memory parts will stay unchanged.
  * Returns the number of used sections of the binary.
  */
-uint32_t loader_load(binary_t* binary, void* address, size_t length);
+uint32_t loader_load(void* address, size_t length);
 
 #endif /* LOADER_H_ */

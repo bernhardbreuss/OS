@@ -10,6 +10,25 @@
 #include <string.h>
 #include <inttypes.h>
 
+static void _process_context_init(Process_t* process) {
+	process->saved_context[14] = (void*)0x01000000; /* R13 = Stack begins at 0x10000000 */
+
+	unsigned int cpsr = _get_CPSR();
+	cpsr &= 0xFFFFFF90; /* delete mode and interrupt disable bits*/
+	cpsr |= 0x00000010; /* set mode to user */
+	process->saved_context[16] = (void*)cpsr;
+}
+
+void process_context_init_byfunc(Process_t* process, process_func func) {
+	process->saved_context[0] = func;
+	_process_context_init(process);
+}
+
+void process_context_init_bybinary(Process_t* process, binary_t* binary) {
+	process->saved_context[0] = binary->entry_point;
+	_process_context_init(process);
+}
+
 uint8_t process_context_init(Process_t* process) {
 	uint8_t* stack = malloc(PROCESS_STACK_SIZE);
 	if (stack != NULL) {
