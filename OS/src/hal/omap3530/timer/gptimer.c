@@ -79,7 +79,7 @@ void gptimer_get_schedule_timer(gptimer_t* schedule_timer) {
 
 void gptimer_schedule_timer_init(gptimer_t* const timer) {
 
-	int schedule_time_in_millis = 3000;
+	int schedule_time_in_millis = 10000;
 
 	//set to 32 kHz clock
 	*(PRCM_CM_CLKSEL_PER) &= ~BIT0;

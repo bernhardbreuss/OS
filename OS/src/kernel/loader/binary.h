@@ -8,7 +8,7 @@
 #ifndef BINARY_H_
 #define BINARY_H_
 
-#include "../../util/linked_list.h"
+#include <linked_list.h>
 #include <stdlib.h>
 
 #define PROTECTION_FLAG_X	0x1
@@ -29,7 +29,7 @@ typedef struct {
 	uint32_t file_length;
 	void* mem_address;
 	size_t mem_length;
-	uint32_t protection_flags;
+	uint8_t protection_flags;
 } binary_section_t;
 
 #endif /* BINARY_H_ */

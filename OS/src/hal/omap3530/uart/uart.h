@@ -13,8 +13,6 @@
 #include "../../../bit.h"
 #include <stdlib.h>
 
-//TODO: remove NEW tag
-
 #define UART1 		((unsigned int) 0x4806A000)
 #define UART_NR_1		1
 #define UART2 		((unsigned int) 0x4806C000)

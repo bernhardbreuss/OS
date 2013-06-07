@@ -7,7 +7,7 @@
 
 #include "elf.h"
 #include "binary.h"
-#include "../../util/linked_list.h"
+#include <linked_list.h>
 
 binary_t* elf_init(void* ident, binary_read read_function) {
 	binary_t* binary = malloc(sizeof(binary_t));

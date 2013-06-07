@@ -35,7 +35,8 @@
 
 #define MMU_FIRST_LEVEL_KERNEL_AP BIT10 /* read/write access in privileged mode else no access */
 #define MMU_FIRST_LEVEL_USER_AP (BIT11 | BIT10) /* read/write access in privileged mode and user mode */
-#define MMU_SECOND_LEVEL_AP (BIT4 | BIT5) /* read/write access in privileged mode and user mode */
+#define MMU_SECOND_LEVEL_KERNEL_AP BIT4 /* read/write access in privileged mode else no access */
+#define MMU_SECOND_LEVEL_USER_AP (BIT5 | BIT4) /* read/write access in privileged mode and user mode */
 
 #define MMU_FIRST_LEVEL_NOT_GLOBAL BIT17
 #define MMU_SECOND_LEVEL_NOT_GLOBAL BIT11

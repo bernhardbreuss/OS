@@ -13,9 +13,9 @@
 #include "../../hal/generic/irq/irq.h"
 #include "../../service/logger/logger.h"
 #include "../mmu/mmu.h"
-#include "../../util/linked_list.h"
-#include "../ipc/ipc.h"
+#include <linked_list.h>
 #include "../../hal/generic/mmu/mmu.h"
+#include <ipc.h>
 
 static gptimer_t _schedule_timer;
 
@@ -48,7 +48,7 @@ void process_manager_init(mmu_table_t* kernel_page_table) {
 	linked_list_init(&kernel.ipc.sender);
 	kernel.name = "Kernel";
 	kernel.page_table = kernel_page_table;
-	kernel.pid = 0;
+	kernel.pid = PROCESS_KERNEL;
 	kernel.priority = PROCESS_PRIORITY_HIGH;
 
 	process_manager_current_process = &kernel;
@@ -79,6 +79,7 @@ static ProcessId_t _process_manager_start_process(Process_t* process, mmu_table_
 	linked_list_init(&process->ipc.sender);
 	process->page_table = page_table;
 	process->priority = priority;
+	process->state = PROCESS_READY;
 
 	process->pid = nextProcessId++;
 	linked_list_add(&processes, process);

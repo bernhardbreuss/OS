@@ -9,8 +9,8 @@
 #include "kernel/process/process.h"
 #include "kernel/process/process_manager.h"
 #include "hal/generic/uart/uart.h"
-#include "driver/driver_manager.h" /* TODO: move to kernel */
-#include "kernel/ipc/ipc.h"
+#include "../driver_manager/driver_manager.h"
+#include <ipc.h>
 #include "tests/pwm_test.h"
 #include "kernel/loader/binary.h"
 #include "kernel/loader/elf.h"
@@ -20,6 +20,7 @@
 #include "service/serial_service.h"
 //#include "binary.h"
 #include "hal/generic/irq/irq.h"
+#include "kernel/kernel.h"
 
 #pragma INTERRUPT(udef_handler, UDEF);
 interrupt void udef_handler() {
@@ -141,18 +142,14 @@ void main(void) {
 	logger_debug("\r\n\r\nSystem initialize ...");
 	logger_logmode();
 
-
-
-	/*asm("\t CPS #0x10");
-	logger_logmode();*/
-
 	/* init led stuff */
 	turnoff_rgb();
 
-	driver_manager_init();
-	driver_manager_add_driver(GPIO5, &gpio_driver, &gpio_start_driver_process);
-
 	process_manager_init(page_table);
+
+	/*driver_manager_init();
+	driver_manager_add_driver(GPIO5, &gpio_driver, &gpio_start_driver_process);*/
+
 
 	process1.func = &ipc_process1;
 	process1.name = "LED 0 (IPC, fast)";
@@ -170,6 +167,6 @@ void main(void) {
 	irq_add_handler(UART3_INTCPS_MAPPING_ID, &uart3_irq_handler);
 
 	logger_debug("Kernel started ...");
-	/* TODO: start IPC */
-	while (1) ;
+
+	kernel_main_loop();
 }

@@ -8,11 +8,10 @@
 #include "gpio.h"
 #include "../../kernel/process/process.h"
 #include "../../kernel/process/process_manager.h"
-#include "../../devices/device.h"
-#include "../../kernel/ipc/ipc.h"
 #include "../../service/logger/logger.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <ipc.h>
 
 
 uint32_t gpio_main(void) {

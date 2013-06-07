@@ -6,8 +6,6 @@
 	.global mmu_get_ifar
 	.global mmu_get_dfsr
 	.global mmu_get_dfar
-	.global pabt_handler
-	.global dabt_handler
 
 mmu_ttbr_set0:
 	STMFD R13!, {R2, R3}
@@ -85,69 +83,3 @@ mmu_get_dfsr:
 mmu_get_dfar:
 	MRC p15, #0, R0, c6, c0, #0 ; Read Data Fault Address Register
 	MOV PC, R14
-
-pabt_handler:
-	SUB R14, R14, #4
-	STMFD R13!, {R0-R2, R14}
-
-	MRC p15, #0, R0, c5, c0, #1 ; Read Instruction Fault Status Register
-	MRC p15, #0, R1, c6, c0, #2 ; Read Instruction Fault Address Register
-
-	B foobar
-
-dabt_handler:
-	SUB R14, R14, #8
-	STMFD R13!, {R0-R1, R14}
-
-	MRC p15, #0, R0, c5, c0, #0 ; Read Data Fault Status Register
-	MRC p15, #0, R1, c6, c0, #0 ; Read Data Fault Address Register
-
-foobar:
-	STR R1, _mmu_asm_va
-	ADR R1, _mmu_asm_va
-
-	BL _mmu_handle_abort
-	STR R0, _mmu_asm_size
-	LDMFD R13!, {R0-R1, R14}
-
-	CMP R0, #0
-	BNE foobar_load
-
-	MOVS PC, R14
-
-foobar_load:
-	CPS #0x1F
-	STMFD R13!, {R0-R4, R14}
-
-	CPS #0x17
-	MOV R2, R14
-	MRS R3, SPSR
-	CPS #0x1F
-
-	LDR R0, _mmu_asm_va
-	LDR R1, _mmu_asm_size
-
-	;enable interrupts
-	MRS R4, CPSR
-	BIC R4, R4, #0xC0	; enable interrupts
-	MSR CPSR_c, R4
-
-	BL loader_load
-
-	MRS R0, CPSR
-	BIC R0, R0, #0x1F	; clear mode bits
-	ORR R0, R0, #0xD7	; abort mode, disable interrupts
-	MSR CPSR_c, R0
-
-	MSR SPSR_fsxc, R3
-	MOV R14, R2
-
-	CPS #0x1F
-	LDMFD R13!, {R0-R4, R14}
-	CPS #0x17
-	MOVS PC, R14
-
-	.global _mmu_handle_abort
-	.global loader_load
-_mmu_asm_va:	.field 0
-_mmu_asm_size:	.field 0

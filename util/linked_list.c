@@ -36,17 +36,14 @@ linked_list_node_t* linked_list_add(linked_list_t* list, void* value) {
 
 linked_list_node_t* linked_list_add_node(linked_list_t* list, linked_list_node_t* new_node) {
 	new_node->next = NULL;
+	new_node->prev = list->tail;
 	if (list->head == NULL) {
 		/* empty list */
-		new_node->prev = NULL;
-
 		list->head = new_node;
-		list->tail = new_node;
 	} else {
 		list->tail->next = new_node;
-		new_node->prev = list->tail;
-		list->tail = new_node;
 	}
+	list->tail = new_node;
 
 	return new_node;
 }

@@ -6,14 +6,13 @@
  */
 
 #include "ipc.h"
-#include "../process/process.h"
+#include <process.h>
 #include "../process/process_manager.h"
-#include "../../driver/driver_manager.h"
 
 uint32_t ipc_syscall_device(Device_t device, uint8_t call_type, message_t* msg) {
 	//get the process for this driver
 	//the getter starts the process internally if not running currently
-	ProcessId_t process_id = driver_manager_get_process(device);
+	ProcessId_t process_id = INVALID_PROCESS_ID; // TODO: driver_manager_get_process(device);
 	if (process_id != INVALID_PROCESS_ID) {
 		return ipc_syscall(process_id, call_type, msg); //send message via software interrupt
 	} else {
@@ -85,7 +84,7 @@ uint32_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 					dst = node->value;
 					free(node);
 				}
-			}
+			} /* TODO: else check if sender is in sender list and remove if necessary */
 			if (dst != NULL && dst->state == PROCESS_BLOCKED && dst->ipc.other == src->pid) {
 				/* both process are now BLOCKED */
 				_enable_interrupts();

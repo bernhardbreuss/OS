@@ -9,7 +9,7 @@
 #define IPC_H_
 
 #include <inttypes.h>
-#include "../../devices/device.h"
+#include "device.h"
 #include "message.h"
 
 #define IPC_NOOP		0

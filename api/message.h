@@ -12,8 +12,7 @@
 
 typedef struct _message_t message_t;
 
-#include "../process/process.h"
-//typedef int32_t ProcessId_t; /* forward declaration instead of #include "../process.h" to avoid circular inclusion */
+#include "process.h"
 
 #define BUFFER_SIZE 100
 #define DATA_SIZE BUFFER_SIZE / sizeof(unsigned int)

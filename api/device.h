@@ -8,8 +8,6 @@
 #ifndef DEVICE_H_
 #define DEVICE_H_
 
-#include <stdint.h>
-
 #define Device_t unsigned int
 
 #define DEVICE_OPEN		0x0

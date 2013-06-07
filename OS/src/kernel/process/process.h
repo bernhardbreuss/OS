@@ -1,5 +1,5 @@
 /*
- * ps.h
+ * process.h
  *
  *  Created on: 19.03.2013
  *      Author: edi
@@ -12,12 +12,8 @@
 #include "../../platform/platform.h"
 #include "../mmu/mmu.h"
 #include "../loader/binary.h"
-
-typedef uint32_t (*process_func)(void);
-typedef int32_t ProcessId_t;
-
-#define PROCESS_ANY -2
-#define INVALID_PROCESS_ID -1 /* TODO: rename with prefix PROCESS ... */
+#include <message.h>
+#include <process.h>
 
 #define process_name_t char*
 
@@ -32,8 +28,6 @@ typedef enum {
 	PROCESS_PRIORITY_LOW = 1
 } ProcessPriority_t;
 #define PROCESS_PRIORITY_COUNT 2
-
-#include "../ipc/message.h" /* do not move this up! otherwise circular inclusion will happen. */
 
 typedef struct {
 	ProcessId_t pid;
