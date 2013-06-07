@@ -16,7 +16,7 @@
 typedef struct _Driver_t {
 	const char* id;
 	uint32_t (*init) (Device_t device);
-	uint32_t (*ioctl) (message_t* msg); //device depentend controll
+	uint32_t (*ioctl) (message_t* msg); //device dependent control
 	uint32_t (*open) (message_t* msg); //open driver file
 	uint32_t (*close) (message_t* msg); //close driver file
 	uint32_t (*read) (message_t* msg); //read from driver file
