@@ -20,11 +20,11 @@ uint32_t gpio_main(void) {
 
 	while (1) {
 		if (ipc_syscall(PROCESS_ANY, IPC_RECEIVE, &msg) == IPC_OK) {
-			if (msg.type == MESSAGE_TYPE_DATA) { /* TODO: is msg->type really necessary? */
+			if (msg.type == MESSAGE_TYPE_DATA) { /* TODO: is msg->type really necessary? At the moment not*/
 				switch (msg.value.data[0]) {
 				case DEVICE_OPEN:
 					/* TODO: rewrite for generic GPIO (needs MMU) */
-					*(GPIO5_OE) &= ~(1 << msg.value.data[1]); /* TODO: should be done through kernel (IPC?) */
+					*(GPIO5_OE) &= ~(1 << msg.value.data[1]); /* TODO: Convert to mmio through kernel */
 				case DEVICE_WRITE: /* DEVICE_OPEN is falling through */
 					if (msg.value.data[2] == GPIO_ON) { /* on */
 						*(GPIO5_DATAOUT) |= (1 << msg.value.data[1]);

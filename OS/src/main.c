@@ -12,6 +12,7 @@
 #include "driver/driver_manager.h" /* TODO: move to kernel */
 #include "kernel/ipc/ipc.h"
 #include "tests/pwm_test.h"
+#include "kernel/kernel.h"
 #include "kernel/loader/binary.h"
 #include "kernel/loader/elf.h"
 #include "kernel/loader/loader.h"
@@ -171,5 +172,5 @@ void main(void) {
 
 	logger_debug("Kernel started ...");
 	/* TODO: start IPC */
-	while (1) ;
+	kernel_main_loop() ;
 }
