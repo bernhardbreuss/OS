@@ -410,7 +410,33 @@ typedef struct {
 
 #define MMCHS_HCTL_IWE					BIT24
 
+/*
+ * Interrupts
+ */
+
+#define MMCHS_IE_CC_ENABLE				BIT0
+#define MMCHS_IE_TC_ENABLE				BIT1
+#define MMCHS_IE_BGE_ENABLE				BIT2
+
+#define MMCHS_IE_BWR_ENABLE				BIT4
+#define MMCHS_IE_BRR_ENABLE				BIT5
+
 #define MMCHS_IE_CIRQ_ENABLE			BIT8
+#define MMCHS_IE_OBI_ENABLE				BIT9
+
+#define MMCHS_IE_CTO_ENABLE				BIT16
+#define MMCHS_IE_CCRC_ENABLE			BIT17
+#define MMCHS_IE_CEB_ENABLE				BIT18
+#define MMCHS_IE_CIE_ENABLE				BIT19
+#define MMCHS_IE_DTO_ENABLE				BIT20
+#define MMCHS_IE_DCRC_ENABLE			BIT21
+#define MMCHS_IE_DEB_ENABLE				BIT22
+
+#define MMCHS_IE_ACE_ENABLE				BIT24
+
+#define MMCHS_IE_CERR_ENABLE			BIT28
+#define MMCHS_IE_BADA_ENABLE			BIT29
+
 
 // instances of the data buffer (see OMAP35x.pdf, page 3207)
 typedef struct _MMCHS_DATA {

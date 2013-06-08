@@ -13,43 +13,22 @@
 #include "../../../platform/omap3530/mmchs.h"
 
 
-#define SUCCESS 0
-#define ERROR	1
+#define SUCCESS 1
+#define ERROR	0
 typedef int RESPONSE_t;
 
-typedef enum {
-	UNKNOWN=0,
-	MMC,
-	SD_1x,
-	SD_2,
-	SD_2_HC,
-	SDIO
-} StorageType_t;
-
-typedef enum {
-	STREAM=0,
-	BLOCK
-} ProtocolType_t;
-
-typedef struct _Protocol_t {
-	ProtocolType_t type;
-	int block_size;
-} Protocol_t;
-
-typedef struct _FileHandle {
-	MMCHS_t* instance;
-	StorageType_t storage_type;
-	Protocol_t* protocol_type;
-} FileHandle_t;
+//typedef struct _FileHandle {
+//
+//} FileHandle_t;
 
 /**
  * Initialise file system
  */
-RESPONSE_t fs_init(FileHandle_t* handle);
+RESPONSE_t fs_init(MMCHS_t* instance);
 
-RESPONSE_t fs_read(FileHandle_t* handle);
+RESPONSE_t fs_read(MMCHS_t* instance);
 
-RESPONSE_t fs_write(FileHandle_t* handle);
+RESPONSE_t fs_write(MMCHS_t* instance);
 
 /*
 int media_init() {

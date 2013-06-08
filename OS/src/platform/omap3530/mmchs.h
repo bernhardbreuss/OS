@@ -8,6 +8,25 @@
 #ifndef OMAP3530_MMCHS_H_
 #define OMAP3530_MMCHS_H_
 
+typedef enum {
+	UNKNOWN=0,
+	MMC,
+	SD_1x,
+	SD_2,
+	SD_2_HC,
+	SDIO
+} StorageType_t;
+
+typedef enum {
+	STREAM=0,
+	BLOCK
+} ProtocolType_t;
+
+typedef struct _Protocol_t {
+	ProtocolType_t type;
+	int block_size;
+} Protocol_t;
+
 typedef struct _MMCHS_t {
 	unsigned int* volatile SYSCONFIG;
 	unsigned int* volatile SYSSTATUS;
@@ -29,6 +48,9 @@ typedef struct _MMCHS_t {
 	unsigned int* volatile ISE;
 	unsigned int* volatile AC12;
 	unsigned int* volatile CAPA;
+
+	StorageType_t storage_type;
+	Protocol_t protocol_type;
 } MMCHS_t;
 
 #endif

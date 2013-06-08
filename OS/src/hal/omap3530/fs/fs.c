@@ -20,14 +20,14 @@
  */
 static void fs_device_init_mmchs(int instance_nr, MMCHS_t* instance);
 static void fs_device_enable_interface_and_functional_clock(MMCHS_t* instance);
-static void fs_device_soft_reset(MMCHS_t* handle);
+static void fs_device_soft_reset(MMCHS_t* instnace);
 static void fs_device_set_default_capabilities(MMCHS_t* instance);
 static void fs_device_wake_up_config(MMCHS_t* instance);
 static void fs_device_init_procedure_start(MMCHS_t* instance);
 static void fs_device_pre_card_identification(MMCHS_t* instance);
 static RESPONSE_t fs_device_mmc_host_and_bus_config(MMCHS_t* instance);
 
-static RESPONSE_t fs_device_identify_card(FileHandle_t* handle);
+static RESPONSE_t fs_device_identify_card(MMCHS_t* instance);
 
 // helper functions
 
@@ -36,7 +36,7 @@ static int fs_device_check_mmchs_stat_cto(MMCHS_t* instance);
 static void fs_device_set_mmchs_sysctl_src_and_wait_until_reset(MMCHS_t* instance);
 static void fs_device_set_mmchs_sysctl_srd_and_wait_until_reset(MMCHS_t* instance);
 
-static RESPONSE_t fs_device_finish_card_identification(FileHandle_t* handle);
+static RESPONSE_t fs_device_finish_card_identification(MMCHS_t* instance);
 
 static void fs_device_update_clock_frequency(MMCHS_t* instance, unsigned int frequency);
 
@@ -73,7 +73,7 @@ static RESPONSE_t fs_device_send_cmd55(MMCHS_t* instance);
 static RESPONSE_t fs_device_send_acmd6(MMCHS_t* instance);
 static RESPONSE_t fs_device_send_acmd41(MMCHS_t* instance);
 
-static RESPONSE_t fs_device_read_write(FileHandle_t* handle, MMCHS_OPERATION_t operation);
+static RESPONSE_t fs_device_read_write(MMCHS_t* instance, MMCHS_OPERATION_t operation);
 /*
 static RESPONSE_t fs_device_read_write_dma_polling(FileHandle_t* handle, MMCHS_OPERATION_t* operation);
 static RESPONSE_t fs_device_configure_and_enable_DMA(FileHandle_t* handle);
@@ -92,7 +92,7 @@ static void fs_device_logger_error(char* message) {
 // * 	API
 // * *********************** *
 
-RESPONSE_t fs_init(FileHandle_t* handle) {
+RESPONSE_t fs_init(MMCHS_t* instance) {
 	RESPONSE_t status = SUCCESS;
 	// see page 3160:
 	// first step:
@@ -106,33 +106,30 @@ RESPONSE_t fs_init(FileHandle_t* handle) {
 	// customize module's idle and wake-up modes
 	// ->
 	// end
-	fs_device_init_mmchs(1, handle->instance);
+	fs_device_init_mmchs(1, instance);
 
-	fs_device_enable_interface_and_functional_clock(handle->instance);
-	fs_device_soft_reset(handle->instance);
-	fs_device_set_default_capabilities(handle->instance);
+	fs_device_enable_interface_and_functional_clock(instance);
+	fs_device_soft_reset(instance);
+	fs_device_set_default_capabilities(instance);
+	fs_device_init_procedure_start(instance);
+	fs_device_pre_card_identification(instance);
+	fs_device_wake_up_config(instance);
+	status = fs_device_mmc_host_and_bus_config(instance);
+//	if (status == ERROR) {
+//		return ERROR;
+//	}
 
-	fs_device_init_procedure_start(handle->instance);
-	fs_device_pre_card_identification(handle->instance);
-
-//	fs_device_wake_up_config(handle->instance);
-
-//	status = fs_device_mmc_host_and_bus_config(handle->instance);
-	if (status == ERROR) {
-		return ERROR;
-	}
-
-	return fs_device_identify_card(handle);
+	return fs_device_identify_card(instance);
 }
 
-RESPONSE_t fs_read(FileHandle_t* handle) {
+RESPONSE_t fs_read(MMCHS_t* handle) {
 	RESPONSE_t status = ERROR;
  	status = fs_device_read_write(handle, READ);
 
 	return status;
 }
 
-RESPONSE_t fs_write(FileHandle_t* handle) {
+RESPONSE_t fs_write(MMCHS_t* handle) {
 	RESPONSE_t status = ERROR;
  	status = fs_device_read_write(handle, WRITE);
 
@@ -183,8 +180,8 @@ static void fs_device_enable_interface_and_functional_clock(MMCHS_t* instance) {
 	// Prior to any MMCHS register access one must enable MMCHS interface clock and functional clock in
 	// PRCM module registers PRCM.CM_ICLKEN1_CORE and PRCM.CM_FCLKEN1_CORE. Please refer to
 	// Chapter 4, Power, Reset, and Clock Management.
-	*(CM_FCLKEN1_CORE) = (CM_CLKEN1_CORE_EN_MMC1 | CM_CLKEN1_CORE_EN_MMC2 | CM_CLKEN1_CORE_EN_MMC3);
-	*(CM_ICLKEN1_CORE) = (CM_CLKEN1_CORE_EN_MMC1 | CM_CLKEN1_CORE_EN_MMC2 | CM_CLKEN1_CORE_EN_MMC3);
+	*(CM_FCLKEN1_CORE) |= (CM_CLKEN1_CORE_EN_MMC1 | CM_CLKEN1_CORE_EN_MMC2 | CM_CLKEN1_CORE_EN_MMC3);
+	*(CM_ICLKEN1_CORE) |= (CM_CLKEN1_CORE_EN_MMC1 | CM_CLKEN1_CORE_EN_MMC2 | CM_CLKEN1_CORE_EN_MMC3);
 //	*(instance->SYSCONFIG) |= MMCHS_SYSCOFNIG_AUTOIDLE;
 //	*(CM_AUTOIDLE1_CORE) |= (CM_AUTOIDLE1_AUTO_MMC1 | CM_AUTOIDLE1_AUTO_MMC2 | CM_AUTOIDLE1_AUTO_MMC3);
 }
@@ -216,7 +213,26 @@ static void fs_device_wake_up_config(MMCHS_t* instance) {
 	// set the MMCi.MMCHS_HCTL[24] IWE bit to 0x1 to enable the wake-up event on SD card interrupt
 	*(instance->HCTL) |= MMCHS_HCTL_IWE;
 	// set the MMCi.MMCHS[8] CIRQ_ENABLE bit enable the card interrupt (for SDIO card only)
-	*(instance->IE) |= MMCHS_IE_CIRQ_ENABLE;
+//	*(instance->IE) |= MMCHS_IE_CIRQ_ENABLE;
+
+	*(instance->IE) |= (
+			MMCHS_IE_CC_ENABLE
+			|  MMCHS_IE_TC_ENABLE
+			|  MMCHS_IE_BGE_ENABLE
+			|  MMCHS_IE_BWR_ENABLE
+			|  MMCHS_IE_BRR_ENABLE
+			|  MMCHS_IE_CIRQ_ENABLE
+			|  MMCHS_IE_OBI_ENABLE
+			|  MMCHS_IE_CTO_ENABLE
+			|  MMCHS_IE_CCRC_ENABLE
+			|  MMCHS_IE_CEB_ENABLE
+			|  MMCHS_IE_CIE_ENABLE
+			|  MMCHS_IE_DTO_ENABLE
+			|  MMCHS_IE_DCRC_ENABLE
+			|  MMCHS_IE_DEB_ENABLE
+			|  MMCHS_IE_ACE_ENABLE
+			|  MMCHS_IE_CERR_ENABLE
+			|  MMCHS_IE_BADA_ENABLE);
 }
 
 static void fs_device_init_procedure_start(MMCHS_t* instance) {
@@ -251,7 +267,7 @@ static RESPONSE_t fs_device_mmc_host_and_bus_config(MMCHS_t* instance) {
 		*(instance->HCTL) |= MMCHS_HCTL_SDVS_1V8;
 	} else {
 		// TODO what about instance 1?
-		*(instance->HCTL) |= MMCHS_HCTL_SDVS_1V8;
+		*(instance->HCTL) |= MMCHS_HCTL_SDVS_3V0;
 	}
 
 	*(instance->HCTL) |= MMCHS_HCTL_SDBP;
@@ -302,17 +318,17 @@ static RESPONSE_t fs_device_mmc_host_and_bus_config(MMCHS_t* instance) {
 }
 
 // see page 3164:
-static RESPONSE_t fs_device_identify_card(FileHandle_t* handle) {
+static RESPONSE_t fs_device_identify_card(MMCHS_t* instance) {
 	// (Start)
 
 	// do module initialization before this
 	RESPONSE_t status = ERROR;
 
 	// set MMCi.MMCHS_CON[1] INT bit to 0x1 to send an initialization stream
-	*(handle->instance->CON) |= MMCHS_CON_INIT;
+	*(instance->CON) |= MMCHS_CON_INIT;
 
 	// write 0x00000000 in the MMCi.MMCHS_CMD register
-	*(handle->instance->CMD) = 0x00000000;
+	*(instance->CMD) = 0x00000000;
 
 	// (wait 1 ms)
 	// FIXME
@@ -320,37 +336,35 @@ static RESPONSE_t fs_device_identify_card(FileHandle_t* handle) {
 	while (++i < 200000);
 
 	// set MMCi.MMCHS_STAT[0] CC bit to 0x1 to clear the flag
-	*(handle->instance->STAT) |= MMCHS_STAT_CC;
+	*(instance->STAT) |= MMCHS_STAT_CC;
 
 	// set MMCi.MMCHS_CON[1] INT bit to 0x0 to end the initialization sequence
-	*(handle->instance->CON) &= ~MMCHS_CON_INIT;
+	*(instance->CON) &= ~MMCHS_CON_INIT;
 
 	// clear MMCHS_STAT register (write 0xFFFF FFFF)
-	*(handle->instance->STAT) = 0xFFFFFFFF;
+	*(instance->STAT) = 0xFFFFFFFF;
 
 	// change clock frequency to fit protocol
-	fs_device_update_clock_frequency(handle->instance, MMCHS_SYSCTL_CLKD_400KHZ);
+	fs_device_update_clock_frequency(instance, MMCHS_SYSCTL_CLKD_400KHZ);
 
 	// send CMD0 command
-	status = fs_device_send_cmd0(handle->instance);
-	if (status == ERROR) {
-		fs_device_logger_error("fs_device_identify_card: cmd0 failed.\n");
-//		return ERROR;
-	}
+	fs_device_send_cmd0(instance);
+
 	// (A)
 	// send a CMD5 command
-	status = fs_device_send_cmd5(handle->instance);
+	status = fs_device_send_cmd5(instance);
 	if (status == ERROR) {
 		fs_device_logger_error("fs_device_identify_card: cmd5 failed.\n");
 //		return ERROR;
 	}
 
 	// read the MMCi.MMCHS_STAT register
-	while (1) {
+	int try = -1;
+	while (++try < MAX_TRIES) {
 		// CC = 0x1
-		if (fs_device_check_mmchs_stat_cc(handle->instance) == 1) {
+		if (fs_device_check_mmchs_stat_cc(instance) == 1) {
 			// it is an SDIO card
-			handle->storage_type = SDIO;
+			instance->storage_type = SDIO;
 			fs_device_logger_debug("SDIO card detected\n");
 			fs_device_logger_error("SDIO cards are not supported.\n");
 
@@ -361,49 +375,50 @@ static RESPONSE_t fs_device_identify_card(FileHandle_t* handle) {
 			return ERROR;
 		}
 		// CTO = 0x1
-		if (fs_device_check_mmchs_stat_cto(handle->instance) == 1) {
+		if (fs_device_check_mmchs_stat_cto(instance) == 1) {
 			break;
 		}
 	}
 
-	fs_device_set_mmchs_sysctl_src_and_wait_until_reset(handle->instance);
-	status = fs_device_send_cmd8(handle->instance);
+	fs_device_set_mmchs_sysctl_src_and_wait_until_reset(instance);
+	status = fs_device_send_cmd8(instance);
 	if (status == ERROR) {
 		fs_device_logger_error("fs_device_identify_card: cmd8 failed.\n");
 //		return ERROR;
 	}
 
 	// read the MMCi.MMCHS_STAT register
-	while (1) {
+	try = -1;
+	while (++try < MAX_TRIES) {
 		// CC = 0x1
-		if (fs_device_check_mmchs_stat_cc(handle->instance) == 1) {
+		if (fs_device_check_mmchs_stat_cc(instance) == 1) {
 			// yes? (it is an SD card compliant with standard 2.0 or later)
-			handle->storage_type = SD_2;
+			instance->storage_type = SD_2;
 			fs_device_logger_debug("SD card compliant with standard 2.0 or later detected.\n");
 
 			// see the SD Standard Specification version 2.0 or later
 			// to identify the card type: High Capacity; Standard Capacity
 
 			// debug
-			unsigned int response = *(handle->instance->RSP10);
+			unsigned int response = *(instance->RSP10);
 			fs_device_logger_debug("CMD8 success.\n");
 			unsigned int CMD8_ARG = (0x0UL << 12 | (1 << 8) | 0xCEUL << 0);
 			if (response != CMD8_ARG) {
 //				return ERROR;
 			}
 
-			handle->storage_type = SD_2_HC;
+			instance->storage_type = SD_2_HC;
 
 			// goto (End)
 			return SUCCESS;
 		}
 		// CTO = 0x1
-		if (fs_device_check_mmchs_stat_cto(handle->instance) == 1) {
+		if (fs_device_check_mmchs_stat_cto(instance) == 1) {
 			break;
 		}
 	}
 
-	fs_device_set_mmchs_sysctl_src_and_wait_until_reset(handle->instance);
+	fs_device_set_mmchs_sysctl_src_and_wait_until_reset(instance);
 
 	int abort = 0;
 	while (abort == 0) {
@@ -413,33 +428,33 @@ static RESPONSE_t fs_device_identify_card(FileHandle_t* handle) {
 		// |A|
 		//  V
 
-		status = fs_device_send_cmd55(handle->instance);
+		status = fs_device_send_cmd55(instance);
 		if (status == ERROR) {
 			fs_device_logger_error("fs_device_identify_card: cmd55 failed.\n");
-			return ERROR;
+//			return ERROR;
 		}
-		status = fs_device_send_acmd41(handle->instance);
+		status = fs_device_send_acmd41(instance);
 		if (status == ERROR) {
 			fs_device_logger_error("fs_device_identify_card: acmd41 failed.\n");
-			return ERROR;
+//			return ERROR;
 		}
 
 		// read the MMCi.MMCHS_STAT register
 		while (1) {
 			// CC = 0x1
-			if (fs_device_check_mmchs_stat_cc(handle->instance) == 1) {
+			if (fs_device_check_mmchs_stat_cc(instance) == 1) {
 				// (it is a SD card compliant with standard 1.x)
-				handle->storage_type = SD_1x;
+				instance->storage_type = SD_1x;
 				fs_device_logger_debug("SD card compliant with standard 1.x or later detected.\n");
 
 				// verify the card is busy:
 				// read the MMCi.MMCHS_RSP10[31] bit
 				// equal to 0x1?
-				unsigned int* mmchs_rsp10 = handle->instance->RSP10;
+				unsigned int* mmchs_rsp10 = instance->RSP10;
 				if (*(mmchs_rsp10) == (*(mmchs_rsp10)) | BIT31) {
 					// --> yes? -> the card is not busy
 					// 			goto (B)
-					return fs_device_finish_card_identification(handle);
+					return fs_device_finish_card_identification(instance);
 				} else {
 					// --> no? -> the card is busy
 					//			goto ---
@@ -449,7 +464,7 @@ static RESPONSE_t fs_device_identify_card(FileHandle_t* handle) {
 				}
 			}
 			// CTO = 0x1
-			if (fs_device_check_mmchs_stat_cto(handle->instance) == 1) {
+			if (fs_device_check_mmchs_stat_cto(instance) == 1) {
 				// it is a MMC card
 				abort = 1;
 				break;
@@ -459,8 +474,8 @@ static RESPONSE_t fs_device_identify_card(FileHandle_t* handle) {
 
 
 	// (it is a MMC card)
-	handle->storage_type = MMC;
-	fs_device_set_mmchs_sysctl_src_and_wait_until_reset(handle->instance);
+	instance->storage_type = MMC;
+	fs_device_set_mmchs_sysctl_src_and_wait_until_reset(instance);
 	// FIX ME:
 	// As of now, we should not get to here. We don't have any MMC card so we do not support it.
 	// If you want to support MMC cards: uncomment following code block; test it.
@@ -474,7 +489,7 @@ static RESPONSE_t fs_device_identify_card(FileHandle_t* handle) {
 
 		// TO DO what's this OCR 0?
 		// send a CMD1 command* (*With OCR 0. In case of a CMD1 with OCR=0, a second CMD1 must be sent to the card with the "negociated" voltage.
-		status = fs_device_send_cmd1(handle->instance);
+		status = fs_device_send_cmd1(instance);
 		if (status == ERROR) {
 			fs_device_logger_error("fs_device_identify_card: cmd1 failed.\n");
 			return ERROR;
@@ -483,28 +498,28 @@ static RESPONSE_t fs_device_identify_card(FileHandle_t* handle) {
 		// read the MMCi.MMCHS_STAT register
 		while (1) {
 			// CTO = 0x1
-			if (fs_device_check_mmchs_stat_cto(handle->instance) == 1) {
+			if (fs_device_check_mmchs_stat_cto(instance) == 1) {
 				// unknown type of card
-				handle->storage_type = UNKNOWN;
+				storage_type = UNKNOWN;
 				fs_device_logger_debug("unknown card type.\n");
 				// goto (end)
 				return ERROR;
 			}
 
 			// CC = 0x1
-			if (fs_device_check_mmchs_stat_cc(handle->instance) == 1) {
+			if (fs_device_check_mmchs_stat_cc(instance) == 1) {
 				break;
 			}
 		}
 
 		// it is a MMC card
-		handle->storage_type = MMC;
+		storage_type = MMC;
 		fs_device_logger_debug("MMC card detected.\n");
 
 		// Verify the card is busy:
 		// read the MMCi.MMCHS_RSP19[31] bit --> typo in OMPA35x.pdf: should be MMCHS_RSP10
 		// equal to 0x1?
-		unsigned int* mmchs_rsp10 = handle->instance->RSP10;
+		unsigned int* mmchs_rsp10 = instance->RSP10;
 		if (*(mmchs_rsp10) == (*(mmchs_rsp10)) | BIT31) {
 			// --> yes? -> the card is not busy
 			// 			goto (B)
@@ -523,25 +538,25 @@ static RESPONSE_t fs_device_identify_card(FileHandle_t* handle) {
 /**
  * (B)
  */
-static RESPONSE_t fs_device_finish_card_identification(FileHandle_t* handle) {
+static RESPONSE_t fs_device_finish_card_identification(MMCHS_t* instance) {
 	// (B)
 	int status = SUCCESS;
 
 	// TODO what about the information?
 	// send a CMD2 command to get information on how to access the card content
-	status = fs_device_send_cmd2(handle->instance);
+	status = fs_device_send_cmd2(instance);
 	if (status == ERROR) {
 		fs_device_logger_error("fs_device_identify_card: fs_device_finish_card_identification: cmd2 failed.\n");
 		return ERROR;
 	}
-	status = fs_device_send_cmd3(handle->instance);
+	status = fs_device_send_cmd3(instance);
 	if (status == ERROR) {
 		fs_device_logger_error("fs_device_identify_card: fs_device_finish_card_identification: cmd3 failed.\n");
 		return ERROR;
 	}
 
 	// card type?
-	if (handle->storage_type == MMC) {
+	if (instance->storage_type == MMC) {
 		// --> MMC card? -> Is there more than one MMC connected to the same bus, and are they all identified?
 		//			--> yes -> goto (B)
 		//			--> no -> (continue)
@@ -554,7 +569,7 @@ static RESPONSE_t fs_device_finish_card_identification(FileHandle_t* handle) {
 
 	// (continue)
 
-	status = fs_device_send_cmd7(handle->instance);
+	status = fs_device_send_cmd7(instance);
 	if (status == ERROR) {
 		fs_device_logger_error("fs_device_identify_card: fs_device_finish_card_identification: cmd7 failed.\n");
 		return ERROR;
@@ -593,7 +608,7 @@ static void fs_device_set_mmchs_sysctl_src_and_wait_until_reset(MMCHS_t* instanc
 	// set MMCi.MMCHS_SYSCTL[25] SRC bit to 0x1
 	*(instance->SYSCTL) |= MMCHS_SYSCTL_SRC;
 	// and wait until it returns to 0x0
-	while ((*(instance->SYSCTL)) & MMCHS_SYSCTL_SRC != ~MMCHS_SYSCTL_SRC)
+	while (~((*(instance->SYSCTL)) & MMCHS_SYSCTL_SRC) == ~MMCHS_SYSCTL_SRC)
 			;
 }
 
@@ -601,7 +616,7 @@ static void fs_device_set_mmchs_sysctl_srd_and_wait_until_reset(MMCHS_t* instanc
 	// set MMCi.MMCHS_SYSCTL[26] SRD bit to 0x1
 	*(instance->SYSCTL) |= MMCHS_SYSCTL_SRD;
 	// and wait until it returns to 0x0
-	while ((*(instance->SYSCTL)) & MMCHS_SYSCTL_SRD != ~MMCHS_SYSCTL_SRD)
+	while (~((*(instance->SYSCTL)) & MMCHS_SYSCTL_SRD) == ~MMCHS_SYSCTL_SRD)
 			;
 }
 
@@ -682,13 +697,12 @@ static RESPONSE_t fs_device_send_cmd7(MMCHS_t* instance) {
 	return fs_device_send_cmd(instance, &cmd);
 }
 static RESPONSE_t fs_device_send_cmd8(MMCHS_t* instance) {
-	unsigned int cmd8_arg = (0x0UL << 12 | (1 << 8) | 0xCEUL << 0);
 	CMD_t cmd;
 	cmd.mmchs_con =  0x00000001;
 	cmd.mmchs_ie =  0x100f0001;
 	cmd.mmchs_ise =  0x100f0001;
 	cmd.mmchs_cmd =  0x81a0000;
-	cmd.mmchs_arg =  cmd8_arg; // UNDEFINED_ARG;
+	cmd.mmchs_arg =  UNDEFINED_ARG;
 	return fs_device_send_cmd(instance, &cmd);
 }
 /*
@@ -723,13 +737,15 @@ static RESPONSE_t fs_device_send_cmd52(MMCHS_t* instance) {
 }
 */
 static RESPONSE_t fs_device_send_cmd55(MMCHS_t* instance) {
+	RESPONSE_t status = SUCCESS;
 	CMD_t cmd;
 	cmd.mmchs_con =  0x00000001;
 	cmd.mmchs_ie =  0x100f0001;
 	cmd.mmchs_ise =  0x100f0001;
 	cmd.mmchs_cmd =  0x371a0000;
 	cmd.mmchs_arg =  UNDEFINED_ARG;
-	return fs_device_send_cmd(instance, &cmd);
+	status = fs_device_send_cmd(instance, &cmd);
+
 }
 /*
 static RESPONSE_t fs_device_set_bus_width_with_cmd6(MMCHS_t* instance) {
@@ -782,7 +798,7 @@ static RESPONSE_t fs_device_send_cmd(MMCHS_t* instance, CMD_t* cmd) {
 	// --> CMDI = 0x0?
 	// -> no? wait... command line is in use; issuing a command is not allowed.
 	// -> yes? command line is not in use; issuing a command is allowed.
-	while ((*(instance->PSTATE)) & MMCHS_PSTATE_CMDI != ~MMCHS_PSTATE_CMDI)
+	while (~((*(instance->PSTATE)) & MMCHS_PSTATE_CMDI) == ~MMCHS_PSTATE_CMDI)
 		;
 
 	// Write MMCHi.MMCHS_CON register; set MIT, STR bit fields
@@ -807,6 +823,7 @@ static RESPONSE_t fs_device_send_cmd(MMCHS_t* instance, CMD_t* cmd) {
 	// Write MMCHi.MMCHS_IE and MMCi.MMCHS_ISE registers to enable required interrupts
 	// (In order to use interrupts MMCHS_ISE must be configured. If polling is used configuring MMCHS_IE is enough).
 	*(instance->IE) = cmd->mmchs_ie;
+	*(instance->ISE) = cmd->mmchs_ise;
 
 	// Write MMCi.MMCHS_CMD register
 	*(instance->CMD) = cmd->mmchs_cmd;
@@ -826,9 +843,7 @@ static RESPONSE_t fs_device_send_cmd(MMCHS_t* instance, CMD_t* cmd) {
 			// --> yes?
 			// This is a particular case that occurs when there is a conflict on the mmci_cmd line.
 			// Set MMCi.MMCHS_SYSCTL[25] SRC bit to 0x1 and wait until it returns to 0x0
-			*(instance->SYSCTL) |= MMCHS_SYSCTL_SRC;
-			while ( (*(instance->SYSCTL) & MMCHS_SYSCTL_SRC) != ~MMCHS_SYSCTL_SRC )
-				;
+			fs_device_set_mmchs_sysctl_src_and_wait_until_reset(instance);
 
 			// got to (end)
 			return ERROR;
@@ -837,9 +852,7 @@ static RESPONSE_t fs_device_send_cmd(MMCHS_t* instance, CMD_t* cmd) {
 			// CTO = 0x1 and CCRC = 0x0?
 			if ( ((mmchs_stat_value) & (MMCHS_STAT_CTO | MMCHS_STAT_CCRC)) == (MMCHS_STAT_CTO & ~MMCHS_STAT_CCRC) ) {
 				// --> yes? Set the MMCI.MMCHS_SYSCTL[25] SRC bit to 0x1 and wait until it returns to 0x0
-				*(instance->SYSCTL) |= MMCHS_SYSCTL_SRC;
-				while ( (*(instance->SYSCTL) & MMCHS_SYSCTL_SRC) != ~MMCHS_SYSCTL_SRC )
-					;
+				fs_device_set_mmchs_sysctl_src_and_wait_until_reset(instance);
 
 				// go to (end)
 				return ERROR;
@@ -879,14 +892,14 @@ static RESPONSE_t fs_device_send_cmd(MMCHS_t* instance, CMD_t* cmd) {
 }
 
 // without DMA, with polling.
-static RESPONSE_t fs_device_read_write(FileHandle_t* handle, MMCHS_OPERATION_t operation) {
+static RESPONSE_t fs_device_read_write(MMCHS_t* instance, MMCHS_OPERATION_t operation) {
 	// (start)
 
 	// Read the MMCi.MMCHS_PSTATE[1] DATI bit
 	// DATI = 0x0?
 	// --> no? -> the data lines are in use, wait
 	// --> yes? -> data lines are not in use
-	while ((*(handle->instance->PSTATE)) & MMCHS_PSTATE_DATI != ~MMCHS_PSTATE_DATI)
+	while (~((*(instance->PSTATE)) & MMCHS_PSTATE_DATI) != ~MMCHS_PSTATE_DATI)
 		;
 
 	// TODO
@@ -903,12 +916,12 @@ static RESPONSE_t fs_device_read_write(FileHandle_t* handle, MMCHS_OPERATION_t o
 
 	int i = 0;
 	// TODO check this stuff...
-	int stop_condition = (((*(handle->instance->BLK)) & MMCHS_BLEN_TRANSFER_512_BYTES) + 3) / 4;
+	int stop_condition = (((*(instance->BLK)) & MMCHS_BLEN_TRANSFER_512_BYTES) + 3) / 4;
 	while (i < stop_condition) {
 		// Read the MMCi.MMCHS_STAT
-		// *(handle->instance->STAT)
+		// *(instance->STAT)
 		// test if any error occurred
-		if ((*(handle->instance->STAT)) & MMCHS_STAT_ERRI == MMCHS_STAT_ERRI) {
+		if ((*(instance->STAT)) & MMCHS_STAT_ERRI == MMCHS_STAT_ERRI) {
 			return ERROR;
 		}
 
@@ -921,12 +934,12 @@ static RESPONSE_t fs_device_read_write(FileHandle_t* handle, MMCHS_OPERATION_t o
 		// (Repeat MMCHS_DATA access (BLEN + 3)/4 times -> go to (A))
 
 		if (operation == READ) {
-			if ((*(handle->instance->STAT)) & MMCHS_STAT_BRR != MMCHS_STAT_BRR) {
+			if ((*(instance->STAT)) & MMCHS_STAT_BRR != MMCHS_STAT_BRR) {
 				// TODO read
 				++i;
 			}
 		} else {
-			if ((*(handle->instance->STAT)) & MMCHS_STAT_BWR == MMCHS_STAT_BWR) {
+			if ((*(instance->STAT)) & MMCHS_STAT_BWR == MMCHS_STAT_BWR) {
 				// TODO write
 				++i;
 			}
@@ -939,7 +952,7 @@ static RESPONSE_t fs_device_read_write(FileHandle_t* handle, MMCHS_OPERATION_t o
 	while (1) {
 		// Read the MMCi.MMCHS_STAT
 		// TC interrupt occurred?
-		unsigned int status_reg = *(handle->instance->STAT);
+		unsigned int status_reg = *(instance->STAT);
 		if ((status_reg & MMCHS_STAT_TC) != MMCHS_STAT_TC) {
 			// --> no
 			// ----> DEB or DCRC or DTO interrupt occurred?
@@ -949,7 +962,7 @@ static RESPONSE_t fs_device_read_write(FileHandle_t* handle, MMCHS_OPERATION_t o
 				// -------> Yes -> There was an error during the data transfer
 				// ---------> Set MMCi.MMCHS_SYSCTL[26] SRD bit to 0x1
 				// 				and wait until it returns to 0x0
-				fs_device_set_mmchs_sysctl_srd_and_wait_until_reset(handle->instance);
+				fs_device_set_mmchs_sysctl_srd_and_wait_until_reset(instance);
 				// ---------> go to (end)
 				return ERROR;
 			} else {
@@ -963,7 +976,7 @@ static RESPONSE_t fs_device_read_write(FileHandle_t* handle, MMCHS_OPERATION_t o
 	}
 
 	// Transfer type
-	if (handle->protocol_type->type == BLOCK) {
+	if (instance->protocol_type.type == BLOCK) {
 		// --> Finite -> go to (end)
 		return SUCCESS;
 	} else {
@@ -992,7 +1005,7 @@ static RESPONSE_t fs_device_read_write_dma_polling(FileHandle_t* handle, MMCHS_O
 	// DATI = 0x0?
 	// --> no? -> the data lines are in use, wait
 	// --> yes? -> data lines are not in use
-	while ((*(handle->instance->PSTATE)) & MMCHS_PSTATE_DATI != ~MMCHS_PSTATE_DATI)
+	while (~((*(handle->instance->PSTATE)) & MMCHS_PSTATE_DATI) != ~MMCHS_PSTATE_DATI)
 		;
 
 	// Configure and Enable the DMA channel (see the DMA chapter)
