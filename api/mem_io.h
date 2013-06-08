@@ -20,8 +20,8 @@ typedef struct {
 	uint32_t msg;
 }io_msg_t;
 
-uint8_t memory_mapped_read(unsigned int* msg, unsigned int* address);
+unsigned int memory_mapped_read(unsigned int address);
 
-uint8_t memory_mapped_write(unsigned int msg, unsigned int* address);
+void memory_mapped_write(unsigned int msg, unsigned int address);
 
 #endif /* MEM_IO_H_ */

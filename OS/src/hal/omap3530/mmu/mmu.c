@@ -136,7 +136,7 @@ static mmu_table_t _mmu_get_second_level_table(mmu_table_t* table, void* virtual
 		*(first_level_descriptor) = pte;
 	} else {
 		/* second level page table already exists */
-		second_table.address = (void*) ((unsigned int)first_level_descriptor & MMU_PAGE_TABLE_MASK);
+		second_table.address = (void*) (*(first_level_descriptor) & MMU_PAGE_TABLE_MASK);
 	}
 
 	return second_table;
@@ -229,6 +229,25 @@ void mmu_activate_process(Process_t* process) {
 	unsigned int ttbr = (unsigned int)table->address;
 	unsigned int contextidr = (unsigned int)process->pid; /* TODO: ASID are the lower 8 bit. it must be ensured that in the TLB the ASID is unique to the new process */
 	mmu_ttbr_set0(ttbr, contextidr);
+}
+
+void* mmu_get_physical_address(mmu_table_t* table, void* virtual_address) {
+	unsigned int* first_level_descriptor = _mmu_get_first_level_descriptor_address(table, virtual_address);
+	if (table->kernel_table) {
+		return (void*)(((*first_level_descriptor) & MMU_SECTION_MASK) | ((unsigned int)virtual_address & ~MMU_SECTION_MASK));
+	} else {
+		if ((*(first_level_descriptor) & MMU_PAGE_TABLE_DESCRIPTOR) != MMU_PAGE_TABLE_DESCRIPTOR) {
+			return NULL;
+		}
+
+		mmu_table_t second_table = _mmu_get_second_level_table(table, virtual_address);
+		if (second_table.address == NULL) {
+			return NULL;
+		}
+
+		unsigned int* second_level_descriptor = _mmu_get_second_level_descriptor_address(&second_table, virtual_address);
+		return (void*)(((*second_level_descriptor) & MMU_SMALL_PAGE_MASK) | ((unsigned int)virtual_address & ~MMU_SMALL_PAGE_MASK));
+	}
 }
 
 static void _mmu_handle_abort(unsigned int status, void* virtual_address) {

@@ -29,6 +29,7 @@ static linked_list_t ready_processes[PROCESS_PRIORITY_COUNT]; /* one list for ea
 static ProcessId_t nextProcessId;
 
 Process_t* process_manager_current_process;
+Process_t process_manager_kernel_process;
 
 void* process_context_pointer;
 
@@ -60,12 +61,11 @@ void process_manager_init(mmu_table_t* kernel_page_table) {
 	}
 
 	nextProcessId = PROCESS_KERNEL;
-	static Process_t kernel;
-	kernel.binary = NULL;
-	_process_manager_start_process(&kernel, kernel_page_table, "Kernel", PROCESS_PRIORITY_HIGH);
-	kernel.state = PROCESS_RUNNING;
-	process_manager_current_process = &kernel;
-	process_context_pointer = kernel.saved_context;
+	process_manager_kernel_process.binary = NULL;
+	_process_manager_start_process(&process_manager_kernel_process, kernel_page_table, "Kernel", PROCESS_PRIORITY_HIGH);
+	process_manager_kernel_process.state = PROCESS_RUNNING;
+	process_manager_current_process = &process_manager_kernel_process;
+	process_context_pointer = process_manager_kernel_process.saved_context;
 
 	mmu_start();
 

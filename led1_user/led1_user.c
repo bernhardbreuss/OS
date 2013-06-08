@@ -14,8 +14,8 @@ void main(void) {
 	unsigned int gpio5;
 	while (1) {
 		for(i = 0; i < 900000; i++);
-		memory_mapped_read(&gpio5, (unsigned int*) 0x4905603C);
+		gpio5 = memory_mapped_read(0x4905603C);
 		gpio5 ^= LED1_PIN;
-		memory_mapped_write(gpio5, (unsigned int*) 0x4905603C);
+		memory_mapped_write(gpio5, 0x4905603C);
 	}
 }

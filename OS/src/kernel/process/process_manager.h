@@ -13,6 +13,7 @@
 #include "../mmu/mmu.h"
 
 extern Process_t* process_manager_current_process;
+extern Process_t process_manager_kernel_process;
 
 /**
  * Initializes the processSlots array of the manager with NULL pointers.
