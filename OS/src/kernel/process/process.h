@@ -31,7 +31,6 @@ typedef enum {
 
 typedef struct {
 	ProcessId_t pid;
-	process_func func;
 	ProcessState_t state;
 	struct {
 		ProcessId_t other;

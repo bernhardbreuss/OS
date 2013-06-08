@@ -6,10 +6,10 @@
  */
 
 #include <inttypes.h>
-#include "kernel/mem_io/mem_io.h"
+#include <mem_io.h>
 
 #define LED1_PIN			(1 << 22)
-uint32_t led1_user(void) {
+void main(void) {
 	int i;
 	unsigned int gpio5;
 	while (1) {

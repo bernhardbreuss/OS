@@ -64,7 +64,8 @@ uint32_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 				linked_list_add(&dst->ipc.sender, src);
 
 				/* pause process */
-				process_manager_block_current_process(dst);
+				process_manager_block_current_process();
+				process_manager_run_process(dst);
 				_enable_interrupts();
 			}
 
@@ -97,7 +98,8 @@ uint32_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 				process_manager_set_process_ready(dst);
 			} else {
 				/* wait for msg delivery */
-				process_manager_block_current_process(dst);
+				process_manager_block_current_process();
+				process_manager_run_process(dst);
 				_enable_interrupts();
 
 				/* msg received */

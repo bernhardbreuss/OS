@@ -14,7 +14,7 @@ static message_t msg;
 static unsigned int kernel_start_process(void) {
 	if (msg.value.data[1] == KERNEL_START_PROCESS_BYFUNC) {
 		msg.value.data[1] = (unsigned int)process_manager_start_process_byfunc(
-				(process_func)msg.value.data[2],
+				(process_func_t)msg.value.data[2],
 				(char*)msg.value.data[6],
 				PROCESS_PRIORITY_HIGH,
 				msg.value.data[3], msg.value.data[4], msg.value.data[5]);
