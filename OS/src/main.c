@@ -20,7 +20,7 @@
 #include "kernel/mmu/mmu.h"
 #include "kernel/mmu/ram_manager.h"
 #include "service/serial_service.h"
-//#include "binary.h"
+#include "binary.h"
 #include "hal/generic/irq/irq.h"
 #include "kernel/kernel.h"
 
@@ -100,24 +100,16 @@ uint32_t ipc_process1(void) {
 
 uart_t uart3;
 
-uint32_t BB_read(void* ident, void* dst, uint32_t offset, size_t length) {
-#ifndef BINARY_BeagleBlink_out /* ensure that everyone can build */
-#define BINARY_BeagleBlink_out { '\0' }
-#endif
-	static char BeagleBlink[] = BINARY_BeagleBlink_out;
-
-	if (length == 0 || (offset + length) > sizeof(BeagleBlink)) {
+static binary_t* binaries[1];
+static char BINARY_led1_user[] = BINARY_led1_user_out;
+uint32_t mem_elf_read(void* ident, void* dst, uint32_t offset, size_t length) {
+	if (length == 0) {
 		return 0;
 	}
 
-	memcpy(dst, &BeagleBlink[offset], length);
+	memcpy(dst, ((uint8_t*)ident + offset), length);
 	return 1;
 }
-
-extern uint32_t led1_user(void);
-extern unsigned int led1_user_virtual;
-extern unsigned int led1_user_physical;
-extern unsigned int led1_user_size;
 
 void uart3_irq_handler(void);
 void uart3_irq_handler(void) {
@@ -135,7 +127,7 @@ void main(void) {
 	/* logger_init() */
 	uart_get(3, &uart3);
 	uart_protocol_format_t protocol;
-	protocol.baudrate = 0x0138; //115.2Kbps		138;	//9.6 Kbps
+	protocol.baudrate = 0x001A; //115.2Kbps		138;	//9.6 Kbps
 	protocol.stopbit = 0x0;		//1 stop bit
 	protocol.datalen = 0x3;		//length 8
 	protocol.use_parity = 0x0;
@@ -147,24 +139,22 @@ void main(void) {
 	/* init led stuff */
 	turnoff_rgb();
 
+	binaries[0] = elf_init(&BINARY_led1_user, &mem_elf_read);
+
 	process_manager_init(page_table);
 
 	/*driver_manager_init();
 	driver_manager_add_driver(GPIO5, &gpio_driver, &gpio_start_driver_process);*/
 
 
-	process1.func = &ipc_process1;
 	process1.name = "LED 0 (IPC, fast)";
-	process_manager_add_process(&process1);
+	//process_manager_add_process(&process1);
 
 	/*process2.func = &led1_user;
 	process2.name = "LED 1 (slow)";
-	process_manager_add_process(&process2);*/
-	process_manager_start_process_byfunc(&led1_user, "LED1 User", PROCESS_PRIORITY_HIGH, (unsigned int)&led1_user_virtual, (unsigned int)&led1_user_physical, (unsigned int)&led1_user_size);
-
-	/* Loader test stuff
-	binary_t* binary = elf_init(NULL, BB_read);
-	process_manager_start_process_bybinary(binary, "BeagleBlink", PROCESS_PRIORITY_HIGH);*/
+	process_manager_add_process(&process2);
+	process_manager_start_process_byfunc(&led1_user, "LED1 User (slow)", PROCESS_PRIORITY_HIGH, (unsigned int)&led1_user_virtual, (unsigned int)&led1_user_physical, (unsigned int)&led1_user_size);*/
+	process_manager_start_process_bybinary(binaries[0], "LED1 User (slow)", PROCESS_PRIORITY_HIGH);
 
 	irq_add_handler(UART3_INTCPS_MAPPING_ID, &uart3_irq_handler);
 

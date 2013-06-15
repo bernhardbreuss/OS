@@ -19,14 +19,13 @@
  * @param instance 1..3
  */
 static void fs_device_init_mmchs(int instance_nr, MMCHS_t* instance);
-
-static void fs_device_enable_interface_and_functional_clock();
-
+static void fs_device_enable_interface_and_functional_clock(MMCHS_t* instance);
 static void fs_device_soft_reset(MMCHS_t* handle);
-
-static void fs_device_set_default_capabilities(MMCHS_t* handle);
-static void fs_device_wake_up_config(MMCHS_t* handle);
-static RESPONSE_t fs_device_mmc_host_and_bus_config(MMCHS_t* handle);
+static void fs_device_set_default_capabilities(MMCHS_t* instance);
+static void fs_device_wake_up_config(MMCHS_t* instance);
+static void fs_device_init_procedure_start(MMCHS_t* instance);
+static void fs_device_pre_card_identification(MMCHS_t* instance);
+static RESPONSE_t fs_device_mmc_host_and_bus_config(MMCHS_t* instance);
 
 static RESPONSE_t fs_device_identify_card(FileHandle_t* handle);
 
@@ -109,12 +108,16 @@ RESPONSE_t fs_init(FileHandle_t* handle) {
 	// end
 	fs_device_init_mmchs(1, handle->instance);
 
-	fs_device_enable_interface_and_functional_clock(handle);
+	fs_device_enable_interface_and_functional_clock(handle->instance);
 	fs_device_soft_reset(handle->instance);
 	fs_device_set_default_capabilities(handle->instance);
-	fs_device_wake_up_config(handle->instance);
 
-	status = fs_device_mmc_host_and_bus_config(handle->instance);
+	fs_device_init_procedure_start(handle->instance);
+	fs_device_pre_card_identification(handle->instance);
+
+//	fs_device_wake_up_config(handle->instance);
+
+//	status = fs_device_mmc_host_and_bus_config(handle->instance);
 	if (status == ERROR) {
 		return ERROR;
 	}
@@ -176,18 +179,20 @@ static void fs_device_init_mmchs(int instance_nr, MMCHS_t* instance) {
 	instance->CAPA = base + MMCHS_CAPA_OFFSET;
 }
 
-static void fs_device_enable_interface_and_functional_clock() {
+static void fs_device_enable_interface_and_functional_clock(MMCHS_t* instance) {
 	// Prior to any MMCHS register access one must enable MMCHS interface clock and functional clock in
 	// PRCM module registers PRCM.CM_ICLKEN1_CORE and PRCM.CM_FCLKEN1_CORE. Please refer to
 	// Chapter 4, Power, Reset, and Clock Management.
-	*(CM_FCLKEN1_CORE) |= (CM_CLKEN1_CORE_EN_MMC1 | CM_CLKEN1_CORE_EN_MMC2 | CM_CLKEN1_CORE_EN_MMC3);
-	*(CM_ICLKEN1_CORE) |= (CM_CLKEN1_CORE_EN_MMC1 | CM_CLKEN1_CORE_EN_MMC2 | CM_CLKEN1_CORE_EN_MMC3);
+	*(CM_FCLKEN1_CORE) = (CM_CLKEN1_CORE_EN_MMC1 | CM_CLKEN1_CORE_EN_MMC2 | CM_CLKEN1_CORE_EN_MMC3);
+	*(CM_ICLKEN1_CORE) = (CM_CLKEN1_CORE_EN_MMC1 | CM_CLKEN1_CORE_EN_MMC2 | CM_CLKEN1_CORE_EN_MMC3);
+//	*(instance->SYSCONFIG) |= MMCHS_SYSCOFNIG_AUTOIDLE;
+//	*(CM_AUTOIDLE1_CORE) |= (CM_AUTOIDLE1_AUTO_MMC1 | CM_AUTOIDLE1_AUTO_MMC2 | CM_AUTOIDLE1_AUTO_MMC3);
 }
 
 static void fs_device_soft_reset(MMCHS_t* instance) {
 	// see page 3161
 	// set the MMCi.MMCHS_SYSCONFIG[1] SOFTRESET bit to 0x1
-	*(instance->SYSCONFIG) |= MMCHS_SYSCONFIG_SOFTRESET;
+	*(instance->SYSCONFIG) = MMCHS_SYSCONFIG_SOFTRESET;
 	// Read the MMCi.MMCHS_SYSSTATUS[0] RESETDONE bit
 	// RESETDONE = 0x1? --> no? -> wait.
 	while ((*(instance->SYSSTATUS)) & MMCHS_SYSSTATUS_RESETDONE != MMCHS_SYSSTATUS_RESETDONE)
@@ -214,6 +219,19 @@ static void fs_device_wake_up_config(MMCHS_t* instance) {
 	*(instance->IE) |= MMCHS_IE_CIRQ_ENABLE;
 }
 
+static void fs_device_init_procedure_start(MMCHS_t* instance) {
+	*(instance->CON) |= MMCHS_CON_INIT;
+	// send dummy command
+	*(instance->CMD) = 0x00000000;
+	*(CONTROL_PADCONF_MMC1_CLK) = 0x100;
+}
+
+static void fs_device_pre_card_identification(MMCHS_t* instance) {
+	*(instance->HCTL) = 0x00000b00;
+	*(instance->SYSCTL) = 0x00003C07;
+	*(instance->CON) = 0x00000001;
+}
+
 static RESPONSE_t fs_device_mmc_host_and_bus_config(MMCHS_t* instance) {
 	// page 3163
 	// write MMCi.MMCHS_CON register (OD, DW8, CEATA) to configure specific data and command transfer
@@ -233,15 +251,16 @@ static RESPONSE_t fs_device_mmc_host_and_bus_config(MMCHS_t* instance) {
 		*(instance->HCTL) |= MMCHS_HCTL_SDVS_1V8;
 	} else {
 		// TODO what about instance 1?
-		*(instance->HCTL) |= MMCHS_HCTL_SDVS_3V3;
+		*(instance->HCTL) |= MMCHS_HCTL_SDVS_1V8;
 	}
 
-	*(instance->HCTL) |= MMCHS_HCTL_SDBP | MMCHS_HCTL_DTW;
+	*(instance->HCTL) |= MMCHS_HCTL_SDBP;
+	*(instance->HCTL) &= ~MMCHS_HCTL_DTW;
+
 	// TODO ... i dont't know.
 	// For SD/SDIO cards:
 	// following a SET_BUS_WIDTH command (ACMD6) with a value written in bit 1 of the argument.
 	// Prior to this command, the SD card configuration register (SCR) must be verified for the supported bus width by the SD card.
-
 	// \
 	//  \
 	//   |
@@ -290,7 +309,7 @@ static RESPONSE_t fs_device_identify_card(FileHandle_t* handle) {
 	RESPONSE_t status = ERROR;
 
 	// set MMCi.MMCHS_CON[1] INT bit to 0x1 to send an initialization stream
-	*(handle->instance->CON) |= MMCHS_CON_INT;
+	*(handle->instance->CON) |= MMCHS_CON_INIT;
 
 	// write 0x00000000 in the MMCi.MMCHS_CMD register
 	*(handle->instance->CMD) = 0x00000000;
@@ -304,7 +323,7 @@ static RESPONSE_t fs_device_identify_card(FileHandle_t* handle) {
 	*(handle->instance->STAT) |= MMCHS_STAT_CC;
 
 	// set MMCi.MMCHS_CON[1] INT bit to 0x0 to end the initialization sequence
-	*(handle->instance->CON) &= ~MMCHS_CON_INT;
+	*(handle->instance->CON) &= ~MMCHS_CON_INIT;
 
 	// clear MMCHS_STAT register (write 0xFFFF FFFF)
 	*(handle->instance->STAT) = 0xFFFFFFFF;

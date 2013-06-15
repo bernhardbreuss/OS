@@ -14,6 +14,6 @@
 #define PROCESS_KERNEL 0
 
 typedef int32_t ProcessId_t;
-typedef uint32_t (*process_func)(void);
+typedef int (*process_func_t)(int argc, char* argv[]);
 
 #endif /* API_PROCESS_H_ */

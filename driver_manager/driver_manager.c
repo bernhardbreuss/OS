@@ -20,7 +20,7 @@ typedef struct {
 	ProcessId_t (*start_process)(Device_t device); /* later this should be the path to load the driver from fs and a IPC call to process manager to start that process */
 	driver_type_t type;
 	char* driver_path;
-	process_func main_func;
+	process_func_t main_func;
 	unsigned int virtual_address;
 	unsigned int physical_address;
 	unsigned int size;

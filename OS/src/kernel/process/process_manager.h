@@ -13,6 +13,7 @@
 #include "../mmu/mmu.h"
 
 extern Process_t* process_manager_current_process;
+extern Process_t process_manager_kernel_process;
 
 /**
  * Initializes the processSlots array of the manager with NULL pointers.
@@ -22,13 +23,7 @@ void process_manager_init(mmu_table_t* kernel_page_table);
 
 void process_manager_start_scheduling(void);
 
-/**
- * Adds the Process to the manager.
- * @return The ProcesssId. The ProcessId is set to -1 if the process can not be added.
- */
-ProcessId_t process_manager_add_process(Process_t *theProcess);
-
-ProcessId_t process_manager_start_process_byfunc(process_func func, char* name, ProcessPriority_t priority, unsigned int virtual_address, unsigned int physical_address, unsigned int size);
+ProcessId_t process_manager_start_process_byfunc(process_func_t func, char* name, ProcessPriority_t priority, unsigned int virtual_address, unsigned int physical_address, unsigned int size);
 ProcessId_t process_manager_start_process_bybinary(binary_t* binary, char* name, ProcessPriority_t priority);
 
 void process_manager_change_process(Process_t* process);
@@ -41,5 +36,8 @@ Process_t* process_manager_get_process_byid(ProcessId_t id);
 
 void process_manager_set_process_ready(Process_t* process);
 
-void process_manager_block_current_process(Process_t* next_process);
+void process_manager_block_current_process(void);
+
+#pragma SWI_ALIAS(process_manager_run_process, 1)
+void process_manager_run_process(Process_t* next_process);
 #endif /* PROCESS_MANAGER_H_ */

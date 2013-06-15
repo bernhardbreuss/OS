@@ -26,7 +26,13 @@
 #define CM_CLKEN1_CORE_EN_MMC2		BIT25
 #define CM_CLKEN1_CORE_EN_MMC3		BIT30
 
+#define CM_AUTOIDLE1_CORE	((unsigned int*) 0x48004A30)
 
+#define CM_AUTOIDLE1_AUTO_MMC1		BIT24
+#define CM_AUTOIDLE1_AUTO_MMC2		BIT25
+#define CM_AUTOIDLE1_AUTO_MMC3		BIT30
+
+#define CONTROL_PADCONF_MMC1_CLK	((unsigned int*) 0x48002144)	// page 3179, OMAP35x.pdf
 
 /* - ------------ -
  * -	MMCHi	  -
@@ -216,7 +222,7 @@ typedef struct {
 	0x0: The host does not send an initialization sequence.
 	0x1: The host sends an initialization sequence.
  */
-#define MMCHS_CON_INT					BIT1
+#define MMCHS_CON_INIT					BIT1
 
 #define MMCHS_CON_STR					BIT3
 
@@ -302,7 +308,7 @@ typedef struct {
 	0x0: 1-bit Data width (mmci_dat[0] used)
 	0x1: 4-bit Data width (mmci_dat[3:0] used)
  */
-#define MMCHS_HCTL_DTW					BIT1
+#define MMCHS_HCTL_DTW					BIT0
 
 
 #define MMCHS_CAPA_VS18					BIT26
@@ -352,6 +358,7 @@ typedef struct {
 #define MMCHS_SYSCTL_CLKD_80KHZ			(0x258)			// (96 * 1000/80) / 2
 #define MMCHS_SYSCTL_CLKD_400KHZ		(0xF0UL)
 
+#define MMCHS_SYSCONFIG_AUTOIDLE		BIT0
 #define MMCHS_SYSCONFIG_SOFTRESET		BIT1
 #define MMCHS_SYSCONFIG_ENAWAKEUP		BIT2
 

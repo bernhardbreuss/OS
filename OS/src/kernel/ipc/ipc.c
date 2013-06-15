@@ -8,6 +8,7 @@
 #include "ipc.h"
 #include <process.h>
 #include "../process/process_manager.h"
+#include "../../hal/generic/mmu/mmu.h"
 
 uint32_t ipc_syscall_device(Device_t device, uint8_t call_type, message_t* msg) {
 	//get the process for this driver
@@ -40,8 +41,8 @@ uint32_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 
 	src->ipc.call_type = call_type;
 	src->ipc.other = o;
-	src->ipc.msg = msg;
-
+	src->ipc.msg = mmu_get_physical_address(src->page_table, msg);
+	mmu_map(process_manager_kernel_process.page_table, src->ipc.msg, src->ipc.msg);
 
 	switch (call_type) {
 		case IPC_SEND:
@@ -64,7 +65,8 @@ uint32_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 				linked_list_add(&dst->ipc.sender, src);
 
 				/* pause process */
-				process_manager_block_current_process(dst);
+				process_manager_block_current_process();
+				process_manager_run_process(dst);
 				_enable_interrupts();
 			}
 
@@ -97,13 +99,16 @@ uint32_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 				process_manager_set_process_ready(dst);
 			} else {
 				/* wait for msg delivery */
-				process_manager_block_current_process(dst);
+				process_manager_block_current_process();
+				process_manager_run_process(dst);
 				_enable_interrupts();
 
 				/* msg received */
 			}
 			break;
 	}
+
+	src->ipc.call_type = IPC_NOOP;
 
 	return IPC_OK;
 }

@@ -1,12 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>OS</name>
+	<name>led1_user</name>
 	<comment></comment>
 	<projects>
-		<project>util</project>
-		<project>api</project>
-		<project>driver_manager</project>
-		<project>led1_user</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
@@ -28,4 +24,11 @@
 		<nature>org.eclipse.cdt.core.ccnature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>USER_PROCESS.cmd</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/USER_PROCESS.cmd</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>

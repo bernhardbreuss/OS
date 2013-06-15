@@ -30,11 +30,10 @@ SECTIONS
    		*(.interruptvectors)
    	}
 
-	.processes load = USER_PROCESSES, run = VIRTUAL_PROCESSES {
-		. = align(pageSize);
-		led1_user.obj { RUN_START(led1_user_virtual), LOAD_START(led1_user_physical), SIZE(led1_user_size) }
-		. = align(pageSize);
-	}
+   	.processes load = USER_PROCESSES, run = VIRTUAL_PROCESSES {
+   		. = align(pageSize);
+   		idle_process.obj { RUN_START(idle_process_virtual), LOAD_START(idle_process_physical), SIZE(idle_process_size) }
+   	}
 
    .const      > DDR
    .bss        > DDR

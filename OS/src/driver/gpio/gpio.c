@@ -51,7 +51,6 @@ uint32_t gpio_main(void) {
 
 static Process_t gpio_process;
 ProcessId_t gpio_start_driver_process(Device_t device) {
-	gpio_process.func = &gpio_main;
 	gpio_process.priority = PROCESS_PRIORITY_HIGH;
 	gpio_process.state = PROCESS_READY;
 	gpio_process.name = malloc(10);

@@ -11,12 +11,16 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include "binary.h"
+#include "../process/process.h"
 
-/**
- * Loads part of a binary into a given memory space. If the binary doesn't
- * contain information to load, these memory parts will stay unchanged.
- * Returns the number of used sections of the binary.
- */
-uint32_t loader_load(void* address, size_t length);
+typedef struct {
+	Process_t* process;
+	void* virtual_address;
+	void* physical_address;
+	size_t length;
+} loader_load_t;
+
+void loader_addload(void* virtual_address, void* physical_address, size_t length);
+int loader_main(int argc, char* argv[]);
 
 #endif /* LOADER_H_ */
