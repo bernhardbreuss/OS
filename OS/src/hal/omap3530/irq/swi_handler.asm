@@ -8,6 +8,7 @@
 
 _swi_handle_syscall:
 	BL	ipc_handle_syscall		; call syscall handler
+
 	LDMFD R13!, {R1-R2}			; load user PC and SPSR
 
 	CPS #0x11

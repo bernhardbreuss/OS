@@ -60,5 +60,12 @@ void* mmu_get_dfar(void);
 
 #define MMU_ABORT_MASK 0x140F
 
+#pragma INTERRUPT(dabt_handler, DABT);
+#pragma TASK(dabt_handler);
+void dabt_handler(void);
+
+#pragma INTERRUPT(pabt_handler, PABT);
+#pragma TASK(pabt_handler);
+void pabt_handler(void);
 
 #endif /* OMAP3530_MMU_H_ */

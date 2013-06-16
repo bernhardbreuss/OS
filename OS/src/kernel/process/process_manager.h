@@ -28,10 +28,9 @@ ProcessId_t process_manager_start_process_bybinary(binary_t* binary, char* name,
 
 void process_manager_change_process(Process_t* process);
 
-ProcessId_t process_manager_get_process(process_name_t processName);
-
 uint32_t process_manager_start_managing(ProcessId_t processId);
 
+Process_t* process_manager_get_process_byname(process_name_t processName);
 Process_t* process_manager_get_process_byid(ProcessId_t id);
 
 void process_manager_set_process_ready(Process_t* process);

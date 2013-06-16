@@ -16,6 +16,7 @@
 #include "../../../kernel/loader/loader.h"
 #include "../../../kernel/process/process.h"
 #include "../../../kernel/process/process_manager.h"
+#include "../../generic/process_context/process_context.h"
 
 static mmu_table_t* kernel_master_table;
 
@@ -286,22 +287,40 @@ static void _mmu_handle_abort(unsigned int status, void* virtual_address) {
 	/* TODO: kill process */
 }
 
-#pragma INTERRUPT(pabt_handler, PABT);
-interrupt void pabt_handler() {
+interrupt void pabt_handler(void) {
+	asm(" SUB R14, R14, #4");	/* LR = R14; R14-4 is the return address of the IRQ (see ARM System Developers Guid.pdf page 337 */
+	asm(" SUB R13, R13, #4");	/* reserve space for R14 on the stack */
+	asm(" STR R14, [R13]");		/* store R14 on the stack */
+	process_context_save();
+	asm(" ADD R13, R13, #4");	/* release space for R14 on the stack */
+
 	logger_warn("KERNEL INFO: Prefetch abort.");
 
 	unsigned int ifsr = mmu_get_ifsr();
 	void* ifar = mmu_get_ifar();
 
 	_mmu_handle_abort(ifsr, ifar);
+
+	process_manager_change_process(NULL);
+
+	process_context_load();
 }
 
-#pragma INTERRUPT(dabt_handler, DABT);
-interrupt void dabt_handler() {
+interrupt void dabt_handler(void) {
+	asm(" SUB R14, R14, #8");	/* LR = R14; R14-4 is the return address of the IRQ (see ARM System Developers Guid.pdf page 337 */
+	asm(" SUB R13, R13, #4");	/* reserve space for R14 on the stack */
+	asm(" STR R14, [R13]");		/* store R14 on the stack */
+	process_context_save();
+	asm(" ADD R13, R13, #4");	/* release space for R14 on the stack */
+
 	logger_warn("KERNEL INFO: data abort");
 
 	unsigned int dfsr = mmu_get_dfsr();
 	void* dfar = mmu_get_dfar();
 
 	_mmu_handle_abort(dfsr, dfar);
+
+	process_manager_change_process(NULL);
+
+	process_context_load();
 }

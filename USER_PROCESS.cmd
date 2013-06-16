@@ -13,7 +13,6 @@ MEMORY
 }
 
 stackSize = 0x20000;
-pageSize = 0x1000;
 
 SECTIONS
 {
