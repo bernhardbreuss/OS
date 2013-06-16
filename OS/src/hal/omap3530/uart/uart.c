@@ -153,7 +153,87 @@ void uart_init(uart_t* const uart, int uart_mode, struct uart_protocol_format_t 
 	*(uart->LCR_REG) = 0x0000;
 
 	//9 - load the new interrupt configuration
-	*(uart->IER_REG) |= 0x1;
+	*(uart->IER_REG) |= BIT0;
+
+	//10
+	uart_switch_to_config_mode_b(uart);
+
+	//11
+	*(uart->EFR_REG) |= (old_enhanced_en << 4);
+
+	//12
+	uart_switch_to_operational_mode(uart);
+	uart_set_protocol_format(uart, &protocol);
+
+	//13
+	uart_set_mode(uart, uart_mode);
+}
+
+void uart_init_for_dmx(uart_t* const uart, int uart_mode, struct uart_protocol_format_t protocol) {
+	int old_lcr_reg, old_enhanced_en, old_tcr_tlr;
+
+	//17.5.1.1.1 UART Software Reset
+	uart_software_reset(uart);
+
+	//enable FIFO - 17.5.1.1.2
+	//1)
+	old_lcr_reg = uart_switch_to_config_mode_b(uart);
+
+	//2)
+	old_enhanced_en = ((*(uart->EFR_REG) >> 4) & BIT0);
+	*(uart->EFR_REG) |= BIT4;
+
+	//3)
+	uart_switch_to_config_mode_a(uart);
+
+	//4)
+	old_tcr_tlr = ((*(uart->MCR_REG) >> 6) & BIT0);
+	*(uart->MCR_REG) |= BIT6;
+
+	//6)
+	uart_switch_to_config_mode_b(uart);
+
+	//8
+	*(uart->SCR_REG) |= BIT7;		//enable the granularity on TRIGGER RX level
+	*(uart->SCR_REG) |= BIT6;		//enable the granularity on TRIGGER TX level
+
+	//9
+	*(uart->EFR_REG) |= (old_enhanced_en << 4);
+
+	//10
+	uart_switch_to_config_mode_a(uart);
+
+	//11
+	*(uart->MCR_REG) |= (old_tcr_tlr << 6);
+
+	//12
+	*(uart->LCR_REG) = old_lcr_reg;
+
+	//Protocol, Baud Rate, and Interrupt Settings - 17.5.1.1.3
+
+	//1)
+	*(uart->MDR1_REG) |= (BIT2 | BIT1 | BIT0);
+
+	//2)
+	uart_switch_to_config_mode_b(uart);
+
+	//3
+	old_enhanced_en = ((*(uart->EFR_REG) >> 4) & BIT0);
+
+	//4
+	*(uart->LCR_REG) = 0x0000;
+
+	//5
+	*(uart->IER_REG) = 0x0000;
+
+	//6
+	uart_switch_to_config_mode_b(uart);
+
+	//7
+	uart_set_baudrate(uart, &protocol);
+
+	//8
+	*(uart->LCR_REG) = 0x0000;
 
 	//10
 	uart_switch_to_config_mode_b(uart);
@@ -212,7 +292,7 @@ static void uart_switch_to_operational_mode(uart_t* const uart) {
 
 static void uart_set_baudrate(uart_t* const uart,  struct uart_protocol_format_t* const protocol) {
 	*(uart->DLL_REG) = protocol->baudrate & 0xFF;				/* set least signification bits */
-	*(uart->DLH_REG) = (protocol->baudrate >> 8) & 0x3F;			/* set most signification bits */
+	*(uart->DLH_REG) = (protocol->baudrate >> 8) & 0x3F;		/* set most signification bits */
 }
 static void uart_set_protocol_format(uart_t* const uart, struct uart_protocol_format_t* const protocol) {
 	*(uart->LCR_REG) |= protocol->datalen;
@@ -226,6 +306,9 @@ void uart_read(uart_t* const uart, char* buffer) {
 	*buffer = *(uart->RHR_REG);
 }
 void uart_write(uart_t* const uart, char* buffer) {
+	*(uart->THR_REG) = *buffer;
+}
+void uart_write_uint8_t(uart_t* const uart, uint8_t* buffer) {
 	*(uart->THR_REG) = *buffer;
 }
 int uart_is_empty_read_queue(uart_t* const uart) {
