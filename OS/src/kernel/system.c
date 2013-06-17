@@ -14,10 +14,21 @@ static message_t msg;
 
 static unsigned int kernel_start_process(void) {
 	process_name_t name = malloc(sizeof(process_name_t));
-	strncpy((char*)name, &msg.value.buffer[sizeof(unsigned int) * 2], sizeof(PROCESS_MAX_NAME_LENGTH));
+	strncpy((char*)name, &msg.value.buffer[sizeof(unsigned int) * 3], sizeof(PROCESS_MAX_NAME_LENGTH));
 
-	ProcessId_t pid = process_manager_start_process_bybinary((binary_t*)msg.value.data[1], name, PROCESS_PRIORITY_HIGH);
-	msg.value.data[1] = pid;
+
+	Process_t* p = process_manager_start_process_bybinary((binary_t*)msg.value.data[1], name, PROCESS_PRIORITY_HIGH);
+	msg.value.data[1] = p->pid;
+
+	ProcessId_t pid = msg.value.data[2];
+	if (pid != INVALID_PROCESS_ID) {
+		Process_t* other = process_manager_get_process_byid(pid);
+
+		if (other != NULL) {
+			other->stdin = pid;
+			p->stdout = pid;
+		}
+	}
 
 	return KERNEL_OK;
 }

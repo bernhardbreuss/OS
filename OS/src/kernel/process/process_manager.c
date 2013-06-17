@@ -37,7 +37,7 @@ extern void* idle_process_virtual;
 extern void* idle_process_physical;
 extern void* idle_process_size;
 
-static ProcessId_t _process_manager_start_process(Process_t* process, mmu_table_t* page_table, char* name, ProcessPriority_t priority) {
+static Process_t* _process_manager_start_process(Process_t* process, mmu_table_t* page_table, char* name, ProcessPriority_t priority) {
 	process->name = name;
 	process->ipc.call_type = IPC_NOOP;
 	linked_list_init(&process->ipc.sender);
@@ -49,7 +49,7 @@ static ProcessId_t _process_manager_start_process(Process_t* process, mmu_table_
 	linked_list_add(&processes, process);
 	linked_list_add(&ready_processes[priority], process);
 
-	return process->pid;
+	return process;
 }
 
 void process_manager_init(mmu_table_t* kernel_page_table) {
@@ -85,15 +85,15 @@ void process_manager_init(mmu_table_t* kernel_page_table) {
 	gptimer_start(&_schedule_timer);
 }
 
-ProcessId_t process_manager_start_process_byfunc(process_func_t func, process_name_t name, ProcessPriority_t priority, unsigned int virtual_address, unsigned int physical_address, unsigned int size) {
+Process_t* process_manager_start_process_byfunc(process_func_t func, process_name_t name, ProcessPriority_t priority, unsigned int virtual_address, unsigned int physical_address, unsigned int size) {
 	Process_t* process = malloc(sizeof(Process_t));
 	if (process == NULL) {
-		return INVALID_PROCESS_ID;
+		return NULL;
 	}
 	mmu_table_t* page_table = mmu_init_process(0);
 	if (page_table == NULL) {
 		free(process);
-		return INVALID_PROCESS_ID;
+		return NULL;
 	}
 
 	unsigned int end_address = virtual_address + (unsigned int)size;
@@ -102,7 +102,7 @@ ProcessId_t process_manager_start_process_byfunc(process_func_t func, process_na
 		if (mapped == 0) {
 			/* TODO: destroy page table */
 			free(process);
-			return INVALID_PROCESS_ID;
+			return NULL;
 		}
 
 		virtual_address += mapped;
@@ -114,15 +114,15 @@ ProcessId_t process_manager_start_process_byfunc(process_func_t func, process_na
 	return _process_manager_start_process(process, page_table, name, priority);
 }
 
-ProcessId_t process_manager_start_process_bybinary(binary_t* binary, process_name_t name, ProcessPriority_t priority) {
+Process_t* process_manager_start_process_bybinary(binary_t* binary, process_name_t name, ProcessPriority_t priority) {
 	Process_t* process = malloc(sizeof(Process_t));
 	if (process == NULL) {
-		return INVALID_PROCESS_ID;
+		return NULL;
 	}
 	mmu_table_t* page_table = mmu_init_process(0);
 	if (page_table == NULL) {
 		free(process);
-		return INVALID_PROCESS_ID;
+		return NULL;
 	}
 
 	process->binary = binary;

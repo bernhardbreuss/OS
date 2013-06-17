@@ -20,6 +20,8 @@ __stack:.usect  ".stack", 0, 4
 c_stack         .long    __stack
 c_STACK_SIZE    .long    __STACK_SIZE
 
+	.global std_adapter_adapt
+
 ;***************************************************************
 ;* FUNCTION DEF: _c_int00
 ;***************************************************************
@@ -33,6 +35,8 @@ _c_int00: .asmfunc
     ;  - Perform C auto initialization
     ;  - Call global constructors)
     BL    __TI_auto_init
+
+    BL std_adapter_adapt
 
     ; CALL APPLICATION
     BL    ARGS_MAIN_RTN

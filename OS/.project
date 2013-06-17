@@ -9,6 +9,7 @@
 		<project>led1_user</project>
 		<project>gpio</project>
 		<project>led0_user</project>
+		<project>test</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

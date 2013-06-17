@@ -76,10 +76,8 @@ void uart3_irq_handler(void) {
 	logger_debug("UART3 - Received a character: %c", received_char);
 }
 
+#include <std_adapter.h>
 void main(void) {
-	ram_manager_init();
-	mmu_table_t* page_table = mmu_init();
-
 	/* logger_init() */
 	uart_get(3, &uart3);
 	uart_protocol_format_t protocol;
@@ -93,13 +91,16 @@ void main(void) {
 	logger_debug("\r\n\r\nSystem initialize ...");
 	logger_logmode();
 
+	ram_manager_init();
+	mmu_table_t* page_table = mmu_init();
+
 	/* init led stuff */
 	turnoff_rgb();
 
 	process_manager_init(page_table);
 
 	binaries[0] = osx_init(&BINARY_driver_manager, &mem_elf_read);
-	ProcessId_t driver_manager = process_manager_start_process_bybinary(binaries[0], PROCESS_DRIVER_MANAGER_NAME, PROCESS_PRIORITY_HIGH);
+	Process_t* driver_manager = process_manager_start_process_bybinary(binaries[0], PROCESS_DRIVER_MANAGER_NAME, PROCESS_PRIORITY_HIGH);
 
 	/* add drivers to the driver manager */
 	binaries[1] = osx_init(&BINARY_gpio, &mem_elf_read);
@@ -109,15 +110,13 @@ void main(void) {
 	msg.value.data[2] = (unsigned int)(binaries[1]);
 	process_name_t name = "GPIO";
 	memcpy(&(msg.value.buffer[12]), name, sizeof(name));
-	ipc_syscall(driver_manager, IPC_SENDREC, &msg); /* TODO: check return value */
+	ipc_syscall(driver_manager->pid, IPC_SENDREC, &msg); /* TODO: check return value */
 
 	binaries[2] = osx_init(&BINARY_led0_user, &mem_elf_read);
 	process_manager_start_process_bybinary(binaries[2], "LED0 User (fast)", PROCESS_PRIORITY_HIGH);
 
 	binaries[3] = osx_init(&BINARY_led1_user, &mem_elf_read);
 	process_manager_start_process_bybinary(binaries[3], "LED1 User (slow)", PROCESS_PRIORITY_HIGH);
-
-	logger_debug("System started ...");
 
 	kernel_main_loop();
 }

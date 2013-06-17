@@ -41,6 +41,8 @@ typedef struct {
 	char* name;
 	binary_t* binary;
 	mmu_table_t* page_table;
+	ProcessId_t stdin;
+	ProcessId_t stdout;
 } Process_t;
 
 #endif /* PS_H_ */
