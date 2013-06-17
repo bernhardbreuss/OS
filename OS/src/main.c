@@ -119,5 +119,5 @@ void main(void) {
 
 	logger_debug("System started ...");
 
-	kernel_main_loop();
+	system_main_loop();
 }
