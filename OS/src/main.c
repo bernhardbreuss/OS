@@ -56,11 +56,12 @@ void turnoff_rgb(void) {
 
 uart_t uart3;
 
-static binary_t* binaries[4];
+static binary_t* binaries[5];
 static char BINARY_led0_user[] = BINARY_led0_user_out;
 static char BINARY_led1_user[] = BINARY_led1_user_out;
 static char BINARY_driver_manager[] = BINARY_driver_manager_out;
 static char BINARY_gpio[] = BINARY_gpio_out;
+static char BINARY_uart[] = BINARY_uart_out;
 uint32_t mem_elf_read(void* ident, void* dst, uint32_t offset, size_t length) {
 	if (length == 0) {
 		return 0;
@@ -108,6 +109,15 @@ void main(void) {
 	msg.value.data[1] = GPIO5;
 	msg.value.data[2] = (unsigned int)(binaries[1]);
 	process_name_t name = "GPIO";
+	memcpy(&(msg.value.buffer[12]), name, sizeof(name));
+	ipc_syscall(driver_manager, IPC_SENDREC, &msg); /* TODO: check return value */
+
+	/* add drivers to the driver manager */
+	binaries[4] = osx_init(&BINARY_uart, &mem_elf_read);
+	msg.value.data[0] = DRIVER_MANAGER_ADD;
+	msg.value.data[1] = UART2;
+	msg.value.data[2] = (unsigned int)(binaries[4]);
+	name = "UART2";
 	memcpy(&(msg.value.buffer[12]), name, sizeof(name));
 	ipc_syscall(driver_manager, IPC_SENDREC, &msg); /* TODO: check return value */
 
