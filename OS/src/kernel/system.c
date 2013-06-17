@@ -19,16 +19,16 @@ static unsigned int kernel_start_process(void) {
 	ProcessId_t pid = process_manager_start_process_bybinary((binary_t*)msg.value.data[1], name, PROCESS_PRIORITY_HIGH);
 	msg.value.data[1] = pid;
 
-	return KERNEL_OK;
+	return SYSTEM_OK;
 }
 
 static unsigned int kernel_find_process(void) {
 	Process_t* p = process_manager_get_process_byname(&msg.value.buffer[sizeof(unsigned int)]);
 	if (p == NULL) {
-		return KERNEL_ERROR;
+		return SYSTEM_ERROR;
 	} else {
 		msg.value.data[1] = p->pid;
-		return KERNEL_OK;
+		return SYSTEM_OK;
 	}
 }
 
@@ -41,7 +41,7 @@ static unsigned int mem_io_read(message_t *msg){
 	address_data = *address;
 	msg->value.data[1] =  address_data;
 
-	return KERNEL_OK;
+	return SYSTEM_OK;
 
 }
 
@@ -52,7 +52,7 @@ static unsigned int mem_io_write(message_t *msg){
 	address = (unsigned int*) msg->value.data[2];
 	*address = msg->value.data[1];
 
-	return KERNEL_OK;
+	return SYSTEM_OK;
 }
 
 void kernel_main_loop(void) {
@@ -60,10 +60,10 @@ void kernel_main_loop(void) {
 		ipc_syscall(PROCESS_ANY, IPC_RECEIVE, &msg);
 
 		switch (msg.value.data[0]) {
-		case KERNEL_START_PROCESS:
+		case SYSTEM_START_PROCESS:
 			msg.value.data[0] = kernel_start_process();
 			break;
-		case KERNEL_FIND_PROCESS:
+		case SYSTEM_FIND_PROCESS:
 			msg.value.data[0] = kernel_find_process();
 			break;
 		case MEM_IO_READ:
@@ -73,7 +73,7 @@ void kernel_main_loop(void) {
 			msg.value.data[0] = mem_io_write(&msg);
 			break;
 		default:
-			msg.value.data[0] = KERNEL_ERROR;
+			msg.value.data[0] = SYSTEM_ERROR;
 		}
 
 		ipc_syscall(msg.source, IPC_SEND, &msg);

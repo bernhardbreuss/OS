@@ -88,12 +88,12 @@ void process_manager_init(mmu_table_t* kernel_page_table) {
 ProcessId_t process_manager_start_process_byfunc(process_func_t func, process_name_t name, ProcessPriority_t priority, unsigned int virtual_address, unsigned int physical_address, unsigned int size) {
 	Process_t* process = malloc(sizeof(Process_t));
 	if (process == NULL) {
-		return INVALID_PROCESS_ID;
+		return PROCESS_INVALID_ID;
 	}
 	mmu_table_t* page_table = mmu_init_process(0);
 	if (page_table == NULL) {
 		free(process);
-		return INVALID_PROCESS_ID;
+		return PROCESS_INVALID_ID;
 	}
 
 	unsigned int end_address = virtual_address + (unsigned int)size;
@@ -102,7 +102,7 @@ ProcessId_t process_manager_start_process_byfunc(process_func_t func, process_na
 		if (mapped == 0) {
 			/* TODO: destroy page table */
 			free(process);
-			return INVALID_PROCESS_ID;
+			return PROCESS_INVALID_ID;
 		}
 
 		virtual_address += mapped;
@@ -117,12 +117,12 @@ ProcessId_t process_manager_start_process_byfunc(process_func_t func, process_na
 ProcessId_t process_manager_start_process_bybinary(binary_t* binary, process_name_t name, ProcessPriority_t priority) {
 	Process_t* process = malloc(sizeof(Process_t));
 	if (process == NULL) {
-		return INVALID_PROCESS_ID;
+		return PROCESS_INVALID_ID;
 	}
 	mmu_table_t* page_table = mmu_init_process(0);
 	if (page_table == NULL) {
 		free(process);
-		return INVALID_PROCESS_ID;
+		return PROCESS_INVALID_ID;
 	}
 
 	process->binary = binary;

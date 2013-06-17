@@ -20,7 +20,7 @@ static message_t msg;
 }
 
 static int osstd_send_handle(int operation, handle_t* handle, driver_msg_t* buf, size_t size) {
-	if (handle->driver == INVALID_PROCESS_ID) {
+	if (handle->driver == PROCESS_INVALID_ID) {
 		return MESSAGE_DEVICE_UNKNOWN;
 	}
 
@@ -41,7 +41,7 @@ static int osstd_send_device(int operation, Device_t device, driver_msg_t* buf, 
 	msg.value.data[0] = DRIVER_MANAGER_GET;
 	msg.value.data[1] = device;
 	int ipc = ipc_syscall(PROCESS_DRIVER_MANAGER, IPC_SENDREC, &msg);
-	if (ipc != IPC_OK || (ProcessId_t)msg.value.data[0] == INVALID_PROCESS_ID) {
+	if (ipc != IPC_OK || (ProcessId_t)msg.value.data[0] == PROCESS_INVALID_ID) {
 		return MESSAGE_DEVICE_UNKNOWN;
 	}
 
@@ -76,7 +76,7 @@ int open(Device_t device, driver_msg_t* buf, size_t size, handle_t* handle, driv
 	ipc = osstd_send_handle(DRIVER_OPEN, handle, buf, size);
 
 	if (ipc == MESSAGE_DEVICE_UNKNOWN) {
-		handle->driver = INVALID_PROCESS_ID;
+		handle->driver = PROCESS_INVALID_ID;
 		handle->handle = NULL;
 		return MESSAGE_DEVICE_UNKNOWN;
 	}

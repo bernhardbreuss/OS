@@ -11,7 +11,7 @@
 #include <inttypes.h>
 
 #define PROCESS_ANY -2
-#define INVALID_PROCESS_ID -1 /* TODO: rename with prefix PROCESS ... */
+#define PROCESS_INVALID_ID -1
 #define PROCESS_KERNEL 0
 #define PROCESS_DRIVER_MANAGER 3
 
