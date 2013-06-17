@@ -38,8 +38,36 @@
 #define SCM_MODE_6							0x6
 #define SCM_MODE_7							0x7
 
+typedef enum {
+	RED = 2,
+	GREEN = 3,
+	BLUE = 4
+} Color_t;
+
+typedef enum {
+	DMX_FADE_7_MODE_1 = 0x64,
+	DMX_FADE_7_MODE_2 = 0x96,
+	DMX_FADE_3 = 0xDC
+} DMX_Fade_t;
+
+typedef enum {
+	DMX_FADE_HIGH_SPEED = 0x64,
+	DMX_FADE_MED_SPEED = 0x2D,
+	DMX_FADE_LOW_SPEED = 0xB
+} DMX_Fade_Speed_t;
+
+typedef enum {
+	DMX_COLORSPEC_INTENSIFY = -0x1,
+	DMX_COLORSPEC_SOFTEN = 0x1
+} DMX_Colorspektrum_Flow_t;
+
 void dmx_init(void);
+void dmx_uart_set_send_mode(void);
+void dmx_uart_set_reset_mode(void);
+void dmx_send_reset(void);
+void dmx_sleep(int milliseconds);
 void dmx_send(uint8_t* channels, int number_of_channels);
-void dmx_send_continously(uint8_t* channels, int number_of_channels);
+void dmx_send_complete_color_spektrum(int time_in_millis, Color_t color, DMX_Colorspektrum_Flow_t flow);
+void dmx_send_color_fade(DMX_Fade_t fade_mode, DMX_Fade_Speed_t speed);
 
 #endif /* DRIVER_DMX_H_ */

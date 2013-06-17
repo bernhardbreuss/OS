@@ -12,10 +12,6 @@
 
 uart_t uart2;
 
-static void dmx_uart_set_send_mode(void);
-static void dmx_uart_set_reset_mode(void);
-static void dmx_send_reset(void);
-
 void dmx_init(void){
 
 	logger_debug("Initialize DMX ...");
@@ -47,8 +43,6 @@ void dmx_init(void){
 
 	//Configure GPIO_146 as output to be able to send resets with it
 	*(DMX_GPIO5_OE) &= ~(1 << 18);
-
-	dmx_uart_set_send_mode();
 }
 
 
@@ -64,28 +58,50 @@ void dmx_send(uint8_t* channels, int number_of_channels) {
 		return;
 }
 
-void dmx_send_continously(uint8_t* channels, int number_of_channels) {
+void dmx_send_complete_color_spektrum(int time_in_millis, Color_t color, DMX_Colorspektrum_Flow_t flow) {
 
-	while(1) {
+	int sleep_per_color = time_in_millis / 256;
+	if(sleep_per_color < 2) {
+		sleep_per_color = 2;
+	}
 
-		//take account of Reset-Reset gap
-		int i;
-		for(i = 0; i < 2000; i++);
+	int i;
+	uint8_t channels[6];
+	channels[0] = 0x0;	//start byte
+	channels[1] = 0x2; 	//set to RGB
+	channels[2] = 0x0;  //red
+	channels[3] = 0x0;  //green
+	channels[4] = 0x0;  //blue
+	channels[5] = 0x0;	//no function - no speed
+	for(i = 0; i <= 255; i++) {
+
+		dmx_sleep(sleep_per_color);
+		dmx_uart_set_reset_mode();
 		dmx_send_reset();
-		for(i = 0; i < 2000; i++);
 		dmx_uart_set_send_mode();
-
-		dmx_send(channels, number_of_channels);
+		channels[color] = i * flow;
+		dmx_send(&channels[0], 6);
 	}
 }
 
-// STATIC Methods START ----------------------------------------------------------------
+void dmx_send_color_fade(DMX_Fade_t fade_mode, DMX_Fade_Speed_t speed) {
+
+	uint8_t channels[6];
+	channels[0] = 0x0; //start byte
+	channels[1] = fade_mode;
+	channels[2] = 0x0;	//red
+	channels[3] = 0x0;  //green
+	channels[4] = 0x0;  //blue
+	channels[5] = speed; //speed
+
+	dmx_send(channels,6);
+}
 
 /*
  * Set Modes as stated in BBSRM_latest.pdf on page 96 to use
  * Expansion-Board pin 6 with UART2.
  */
-static void dmx_uart_set_send_mode(void) {
+void dmx_uart_set_send_mode(void) {
 
 	//Omap3530x.pdf, modes on page 780
 	//Chosen modes: page 96 in BBSRM_latest.pdf
@@ -106,7 +122,7 @@ static void dmx_uart_set_send_mode(void) {
  * Set Modes as stated in BBSRM_latest.pdf on page 96 to use
  * Expansion-Board pin 6 with GPIO_146.
  */
-static void dmx_uart_set_reset_mode(void) {
+void dmx_uart_set_reset_mode(void) {
 
 	//Omap3530x.pdf, modes on page 780
 	//Chosen modes: page 96 in BBSRM_latest.pdf
@@ -120,9 +136,7 @@ static void dmx_uart_set_reset_mode(void) {
  * Reset: Sending at least 22 bits low (=break) (88 microseconds)
  * then send mark after break (2 bits high) (4 microseconds)
  */
-static void dmx_send_reset(void) {
-
-	dmx_uart_set_reset_mode();
+void dmx_send_reset(void) {
 
 	*(DMX_GPIO5_DATAOUT) &= ~(1 << 18); //send low
 	int i, a;
@@ -134,14 +148,61 @@ static void dmx_send_reset(void) {
 	for(i = 0; i < a; i++);
 }
 
-// STATIC Methods END ----------------------------------------------------------------
+void dmx_sleep(int milliseconds) {
+	int i;
+	int microseconds = milliseconds * 1000;
+	for(i = 0; i < microseconds; i++);
+}
 
-//	dmx_init();
-//	uint8_t channels[256];
-//	channels[0] = 0x0;
-//	channels[1] = 0x2;
-//	channels[2] = 0x0E;
-//	channels[3] = 0xCD;
-//	channels[4] = 0xEB;
-//	channels[5] = 0x0;
-//	dmx_send_continously(&channels[0], 6);
+//dmx_init();
+//dmx_uart_set_reset_mode();
+//dmx_send_reset();
+//dmx_uart_set_send_mode();
+//
+//uint8_t channels[256];
+//channels[0] = 0x0;
+//channels[1] = 0x2;
+//channels[2] = 0x0;
+//channels[3] = 0xB0;
+//channels[4] = 0x0;
+//channels[5] = 0x0;
+//
+//dmx_send(&channels[0], 6);
+//
+//dmx_sleep(2);
+//dmx_uart_set_reset_mode();
+//dmx_send_reset();
+//
+//dmx_uart_set_send_mode();
+//channels[3] = 0x0;
+//channels[4] = 0xFA;
+//dmx_send(&channels[0], 6);
+//
+//int i = 0;
+//while(i < 3000) {
+//	i++;
+//	dmx_sleep(2);
+//	dmx_uart_set_reset_mode();
+//	dmx_send_reset();
+//	dmx_uart_set_send_mode();
+//	dmx_send_color_fade(DMX_FADE_7_MODE_2, DMX_FADE_LOW_SPEED);
+//}
+//i = 0;
+//while(i < 3000) {
+//	i++;
+//	dmx_sleep(2);
+//	dmx_uart_set_reset_mode();
+//	dmx_send_reset();
+//	dmx_uart_set_send_mode();
+//	dmx_send_color_fade(DMX_FADE_3, DMX_FADE_HIGH_SPEED);
+//}
+//
+//int millis = 8000;
+//dmx_send_complete_color_spektrum(millis, RED, DMX_COLORSPEC_INTENSIFY);
+//dmx_send_complete_color_spektrum(millis, RED, DMX_COLORSPEC_SOFTEN);
+//
+//dmx_send_complete_color_spektrum(millis, GREEN, DMX_COLORSPEC_INTENSIFY);
+//dmx_send_complete_color_spektrum(millis, GREEN, DMX_COLORSPEC_SOFTEN);
+//
+//dmx_send_complete_color_spektrum(millis, BLUE, DMX_COLORSPEC_INTENSIFY);
+//dmx_send_complete_color_spektrum(millis, BLUE, DMX_COLORSPEC_SOFTEN);
