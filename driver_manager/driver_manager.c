@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ipc.h>
-#include <kernel.h>
+#include <system.h>
 #include <process.h>
 
 typedef struct {
@@ -64,17 +64,17 @@ static device_driver_map* driver_manager_get_driver(Device_t device) {
 static ProcessId_t driver_manager_start_driver(Device_t device) {
 	device_driver_map* mapping = driver_manager_get_driver(device);
 	if (mapping == NULL) {
-		return INVALID_PROCESS_ID;
+		return PROCESS_INVALID_ID;
 	}
 
-	msg.value.data[0] = KERNEL_START_PROCESS;
+	msg.value.data[0] = SYSTEM_START_PROCESS;
 	msg.value.data[1] = (unsigned int)mapping->driver_binary;
 	strncpy(&msg.value.buffer[sizeof(unsigned int) * 2], mapping->name, sizeof(PROCESS_MAX_NAME_LENGTH));
 
 	unsigned int ipc = ipc_syscall(PROCESS_KERNEL, IPC_SENDREC, &msg);
 
-	if (ipc != IPC_OK || msg.value.data[0] != KERNEL_OK) {
-		return INVALID_PROCESS_ID;
+	if (ipc != IPC_OK || msg.value.data[0] != SYSTEM_OK) {
+		return PROCESS_INVALID_ID;
 	}
 
 	mapping->process_id = msg.value.data[1];

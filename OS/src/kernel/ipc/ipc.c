@@ -27,7 +27,7 @@ int8_t ipc_handle_syscall(ProcessId_t o, uint8_t const call_type, message_t* msg
 		o = src->stdout;
 	}
 
-	if (o == INVALID_PROCESS_ID) {
+	if (o == PROCESS_INVALID_ID) {
 		return IPC_OTHER_NOT_FOUND;
 	} else if (call_type != IPC_RECEIVE || o != PROCESS_ANY) { /* allow ANY only on receive */
 		dst = process_manager_get_process_byid(o);
