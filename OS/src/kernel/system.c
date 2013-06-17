@@ -12,7 +12,7 @@
 
 static message_t msg;
 
-static unsigned int kernel_start_process(void) {
+static unsigned int system_start_process(void) {
 	process_name_t name = malloc(sizeof(process_name_t));
 	strncpy((char*)name, &msg.value.buffer[sizeof(unsigned int) * 2], sizeof(PROCESS_MAX_NAME_LENGTH));
 
@@ -22,7 +22,7 @@ static unsigned int kernel_start_process(void) {
 	return SYSTEM_OK;
 }
 
-static unsigned int kernel_find_process(void) {
+static unsigned int system_find_process(void) {
 	Process_t* p = process_manager_get_process_byname(&msg.value.buffer[sizeof(unsigned int)]);
 	if (p == NULL) {
 		return SYSTEM_ERROR;
@@ -55,16 +55,16 @@ static unsigned int mem_io_write(message_t *msg){
 	return SYSTEM_OK;
 }
 
-void kernel_main_loop(void) {
+void system_main_loop(void) {
 	while (1) {
 		ipc_syscall(PROCESS_ANY, IPC_RECEIVE, &msg);
 
 		switch (msg.value.data[0]) {
 		case SYSTEM_START_PROCESS:
-			msg.value.data[0] = kernel_start_process();
+			msg.value.data[0] = system_start_process();
 			break;
 		case SYSTEM_FIND_PROCESS:
-			msg.value.data[0] = kernel_find_process();
+			msg.value.data[0] = system_find_process();
 			break;
 		case MEM_IO_READ:
 			msg.value.data[0] = mem_io_read(&msg);
