@@ -8,6 +8,7 @@
 #ifndef BINARY_H_
 #define BINARY_H_
 
+#include <inttypes.h>
 #include <linked_list.h>
 #include <stdlib.h>
 

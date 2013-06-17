@@ -15,8 +15,6 @@
 #include <message.h>
 #include <process.h>
 
-#define process_name_t char*
-
 typedef enum {
 	PROCESS_READY,
 	PROCESS_RUNNING,

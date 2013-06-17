@@ -85,7 +85,7 @@ void process_manager_init(mmu_table_t* kernel_page_table) {
 	gptimer_start(&_schedule_timer);
 }
 
-ProcessId_t process_manager_start_process_byfunc(process_func_t func, char* name, ProcessPriority_t priority, unsigned int virtual_address, unsigned int physical_address, unsigned int size) {
+ProcessId_t process_manager_start_process_byfunc(process_func_t func, process_name_t name, ProcessPriority_t priority, unsigned int virtual_address, unsigned int physical_address, unsigned int size) {
 	Process_t* process = malloc(sizeof(Process_t));
 	if (process == NULL) {
 		return INVALID_PROCESS_ID;
@@ -114,7 +114,7 @@ ProcessId_t process_manager_start_process_byfunc(process_func_t func, char* name
 	return _process_manager_start_process(process, page_table, name, priority);
 }
 
-ProcessId_t process_manager_start_process_bybinary(binary_t* binary, char* name, ProcessPriority_t priority) {
+ProcessId_t process_manager_start_process_bybinary(binary_t* binary, process_name_t name, ProcessPriority_t priority) {
 	Process_t* process = malloc(sizeof(Process_t));
 	if (process == NULL) {
 		return INVALID_PROCESS_ID;
@@ -150,6 +150,20 @@ void process_manager_change_process(Process_t* process) {
 	mmu_activate_process(process);
 
 	logger_debug("Current process: #%u %s", process->pid, process->name);
+}
+
+Process_t* process_manager_get_process_byname(process_name_t name) {
+	linked_list_node_t* node = processes.head;
+	while (node != NULL) {
+		Process_t* p = (Process_t*)node->value;
+		if (strncmp(name, p->name, sizeof(PROCESS_MAX_NAME_LENGTH)) == 0) {
+			return p;
+		}
+
+		node = node->next;
+	}
+
+	return NULL;
 }
 
 Process_t* process_manager_get_process_byid(ProcessId_t id) {
@@ -193,6 +207,8 @@ void process_manager_set_process_ready(Process_t* process) {
 		return;
 	}
 
+	logger_debug("process_manager: readying %i:%s", process->pid, process->name);
+
 	process->state = PROCESS_READY;
 	linked_list_insert_begin(&ready_processes[process->priority], process);
 }
@@ -201,6 +217,8 @@ void process_manager_block_current_process(void) {
 	if (process_manager_current_process->state == PROCESS_BLOCKED) {
 		return;
 	}
+
+	logger_debug("process_manager: blocking %i:%s", process_manager_current_process->pid, process_manager_current_process->name);
 
 	process_manager_current_process->state = PROCESS_BLOCKED;
 	linked_list_node_t* node = ready_processes[process_manager_current_process->priority].head;

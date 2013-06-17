@@ -8,22 +8,27 @@
 #include "kernel.h"
 #include "process/process_manager.h"
 #include <ipc.h>
+#include "string.h"
 
 static message_t msg;
 
 static unsigned int kernel_start_process(void) {
-	if (msg.value.data[1] == KERNEL_START_PROCESS_BYFUNC) {
-		msg.value.data[1] = (unsigned int)process_manager_start_process_byfunc(
-				(process_func_t)msg.value.data[2],
-				(char*)msg.value.data[6],
-				PROCESS_PRIORITY_HIGH,
-				msg.value.data[3], msg.value.data[4], msg.value.data[5]);
+	process_name_t name = malloc(sizeof(process_name_t));
+	strncpy((char*)name, &msg.value.buffer[sizeof(unsigned int) * 2], sizeof(PROCESS_MAX_NAME_LENGTH));
 
-		return KERNEL_OK;
-	} else if (msg.value.data[1] == KERNEL_START_PROCESS_BYPATH) {
-		return KERNEL_ERROR; /* TODO: implement */
-	} else {
+	ProcessId_t pid = process_manager_start_process_bybinary((binary_t*)msg.value.data[1], name, PROCESS_PRIORITY_HIGH);
+	msg.value.data[1] = pid;
+
+	return KERNEL_OK;
+}
+
+static unsigned int kernel_find_process(void) {
+	Process_t* p = process_manager_get_process_byname(&msg.value.buffer[sizeof(unsigned int)]);
+	if (p == NULL) {
 		return KERNEL_ERROR;
+	} else {
+		msg.value.data[1] = p->pid;
+		return KERNEL_OK;
 	}
 }
 
@@ -57,6 +62,9 @@ void kernel_main_loop(void) {
 		switch (msg.value.data[0]) {
 		case KERNEL_START_PROCESS:
 			msg.value.data[0] = kernel_start_process();
+			break;
+		case KERNEL_FIND_PROCESS:
+			msg.value.data[0] = kernel_find_process();
 			break;
 		case MEM_IO_READ:
 			msg.value.data[0] = mem_io_read(&msg);

@@ -12,10 +12,14 @@
 
 typedef struct _message_t message_t;
 
+#include <limits.h>
 #include "process.h"
 
-#define BUFFER_SIZE 100
-#define DATA_SIZE BUFFER_SIZE / sizeof(unsigned int)
+#define MESSAGE_BUFFER_SIZE 512
+#define MESSAGE_DATA_SIZE (MESSAGE_BUFFER_SIZE / sizeof(unsigned int))
+
+#define MESSAGE_UNKNOWN INT_MIN
+#define MESSAGE_DEVICE_UNKNOWN (MESSAGE_UNKNOWN + 1)
 
 typedef enum {
 	MESSAGE_TYPE_BUFFER,
@@ -26,8 +30,8 @@ struct _message_t {
 	ProcessId_t source;
 	ProcessId_t destination;
 	union {
-		char buffer[BUFFER_SIZE];
-		unsigned int data[DATA_SIZE];
+		char buffer[MESSAGE_BUFFER_SIZE];
+		unsigned int data[MESSAGE_DATA_SIZE];
 	} value;
 	uint8_t size;
 	message_type_t type;

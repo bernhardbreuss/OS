@@ -12,7 +12,7 @@
 
 #define MMU_KERNEL_MAPPING { \
 	0x40200000, 0x4020FFE4, /* SRAM and interrupt vectors */ \
-	0x80000000, 0x80400000, /* kernel DDR */ \
+	0x80000000, 0x84000000, /* DDR */ \
 	0x48000000, 0x49FFFFFF  /* memory mapped IO (brute-force method) */ \
 }
 

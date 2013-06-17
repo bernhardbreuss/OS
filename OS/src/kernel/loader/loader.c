@@ -42,8 +42,9 @@ static uint32_t _loader_load(binary_t* binary, void* virtual_address, void* phys
 
 		if (node != NULL) {
 			if (section->mem_address > virtual_address) {
-				/* there is an empty junk, which will be not initialized */
+				/* there is an empty junk, which will be not initialized. skip it */
 				length -= ((unsigned int)section->mem_address - (unsigned int)virtual_address);
+				physical_address = ((uint8_t*)physical_address + ((uint8_t*)section->mem_address - (uint8_t*)virtual_address));
 				virtual_address = section->mem_address;
 			}
 
@@ -100,12 +101,15 @@ static uint32_t _loader_load(binary_t* binary, void* virtual_address, void* phys
 static linked_list_t list;
 static Process_t* loader_process;
 
+static uint8_t loading;
+
 int loader_main(int argc, char* argv[]) {
 	loader_process = process_manager_current_process;
 
 	_disable_interrupts();
 	linked_list_init(&list);
 	while (1) {
+		loading = 1;
 		linked_list_node_t* node;
 		while ((node = linked_list_pop_head(&list)) != NULL) {
 			_enable_interrupts();
@@ -121,6 +125,7 @@ int loader_main(int argc, char* argv[]) {
 			free(node);
 		}
 
+		loading = 0;
 		process_manager_block_current_process();
 		process_manager_run_process(NULL);
 	}
@@ -139,6 +144,8 @@ void loader_addload(void* virtual_address, void* physical_address, size_t length
 	load->length = length;
 	linked_list_add(&list, load);
 
-	process_manager_block_current_process();
-	process_manager_set_process_ready(loader_process);
+	process_manager_block_current_process(); /* <-- block user process which has a page fault */
+	if (!loading) {
+		process_manager_set_process_ready(loader_process); /* <-- start loader process */
+	}
 }

@@ -20,12 +20,12 @@
 #define IPC_ECHO 		8	/* 1000:blocking echo a message*/
 
 #define IPC_OK				0
-#define IPC_OTHER_NOT_FOUND	1
-#define IPC_DEADLOCK		2
+#define IPC_OTHER_NOT_FOUND	-1
+#define IPC_DEADLOCK		2 /* TODO: deadlocks should be resolved by killing both processes in ipc.c */
 
-uint32_t ipc_syscall_device(Device_t device, uint8_t call_type, message_t* msg);
+int8_t ipc_syscall_device(Device_t device, uint8_t call_type, message_t* msg);
 
 #pragma SWI_ALIAS(ipc_syscall, 0);
-uint32_t ipc_syscall(ProcessId_t dst, uint8_t call_type, message_t* msg);
+int8_t ipc_syscall(ProcessId_t dst, uint8_t call_type, message_t* msg);
 
 #endif /* IPC_H_ */

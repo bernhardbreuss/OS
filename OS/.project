@@ -7,6 +7,8 @@
 		<project>api</project>
 		<project>driver_manager</project>
 		<project>led1_user</project>
+		<project>gpio</project>
+		<project>led0_user</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
