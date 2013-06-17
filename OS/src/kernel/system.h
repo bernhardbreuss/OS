@@ -10,6 +10,6 @@
 
 #include <system.h>
 
-void kernel_main_loop(void);
+void system_main_loop(void);
 
 #endif /* KERNEL_H_ */
