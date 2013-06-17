@@ -13,7 +13,7 @@
 #include <ipc.h>
 #include "tests/pwm_test.h"
 #include "tests/ring_buffer_test.h"
-#include "kernel/kernel.h"
+#include "kernel/system.h"
 #include "kernel/loader/binary.h"
 #include "kernel/loader/osx.h"
 #include "kernel/loader/loader.h"
@@ -22,7 +22,6 @@
 #include "service/serial_service.h"
 #include "binary.h"
 #include "hal/generic/irq/irq.h"
-#include "kernel/kernel.h"
 
 #pragma INTERRUPT(udef_handler, UDEF);
 interrupt void udef_handler() {
@@ -118,7 +117,7 @@ void main(void) {
 	binaries[3] = osx_init(&BINARY_led1_user, &mem_elf_read);
 	process_manager_start_process_bybinary(binaries[3], "LED1 User (slow)", PROCESS_PRIORITY_HIGH);
 
-	logger_debug("Kernel started ...");
+	logger_debug("System started ...");
 
 	kernel_main_loop();
 }
