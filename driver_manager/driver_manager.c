@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ipc.h>
-#include <kernel.h>
+#include <system.h>
 #include <process.h>
 
 typedef struct {

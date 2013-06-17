@@ -8,7 +8,7 @@
 #include "process.h"
 #include "message.h"
 #include "ipc.h"
-#include "kernel.h"
+#include "system.h"
 #include "string.h"
 
 ProcessId_t process_find(process_name_t name) {

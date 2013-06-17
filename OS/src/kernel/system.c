@@ -5,7 +5,7 @@
  *      Author: Bernhard
  */
 
-#include "kernel.h"
+#include "system.h"
 #include "process/process_manager.h"
 #include <ipc.h>
 #include "string.h"
