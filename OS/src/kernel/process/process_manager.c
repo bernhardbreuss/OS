@@ -62,7 +62,7 @@ void process_manager_init(mmu_table_t* kernel_page_table) {
 
 	nextProcessId = PROCESS_KERNEL;
 	process_manager_kernel_process.binary = NULL;
-	_process_manager_start_process(&process_manager_kernel_process, kernel_page_table, "Kernel", PROCESS_PRIORITY_HIGH);
+	_process_manager_start_process(&process_manager_kernel_process, kernel_page_table, "System", PROCESS_PRIORITY_HIGH);
 	process_manager_kernel_process.state = PROCESS_RUNNING;
 	process_manager_current_process = &process_manager_kernel_process;
 	process_context_pointer = process_manager_kernel_process.saved_context;
