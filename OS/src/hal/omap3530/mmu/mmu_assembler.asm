@@ -60,7 +60,7 @@ mmu_init_hal:
 	SUB R13, R13, #4
 	STR R0, [R13]
 
-	MOV R0, #0x1	; set N to 1
+	MOV R0, #0x2	; set N to 1
 	MCR p15, #0, R0, c2, c0, #2 ; Write Translation Table Base Control Register
 
 	; set Domain Access Control Register

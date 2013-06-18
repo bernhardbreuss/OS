@@ -16,6 +16,4 @@ void process_context_load();
 void process_context_init_byfunc(Process_t* process, process_func_t func, uint8_t privileged);
 void process_context_init_bybinary(Process_t* process, binary_t* binary);
 
-void process_context_set_argc(Process_t* process, int argc);
-
 #endif /* PROCESS_CONTEXT_H_ */
