@@ -8,7 +8,7 @@
 #ifndef OMAP3530_MMU_H_
 #define OMAP3530_MMU_H_
 
-#include "../../../bit.h"
+#include <bit.h>
 
 #define MMU_USER_N 0x2
 
