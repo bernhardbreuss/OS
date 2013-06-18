@@ -56,9 +56,10 @@ void turnoff_rgb(void) {
 
 uart_t uart3;
 
-static binary_t* binaries[5];
+static binary_t* binaries[6];
 static char BINARY_led0_user[] = BINARY_led0_user_out;
 static char BINARY_led1_user[] = BINARY_led1_user_out;
+static char BINARY_uart2_user[] = BINARY_uart2_user_out;
 static char BINARY_driver_manager[] = BINARY_driver_manager_out;
 static char BINARY_gpio[] = BINARY_gpio_out;
 static char BINARY_uart[] = BINARY_uart_out;
@@ -121,11 +122,14 @@ void main(void) {
 	memcpy(&(msg.value.buffer[12]), name, sizeof(name));
 	ipc_syscall(driver_manager, IPC_SENDREC, &msg); /* TODO: check return value */
 
-	binaries[2] = osx_init(&BINARY_led0_user, &mem_elf_read);
-	process_manager_start_process_bybinary(binaries[2], "LED0 User (fast)", PROCESS_PRIORITY_HIGH);
+//	binaries[2] = osx_init(&BINARY_led0_user, &mem_elf_read);
+//	process_manager_start_process_bybinary(binaries[2], "LED0 User (fast)", PROCESS_PRIORITY_HIGH);
+//
+//	binaries[3] = osx_init(&BINARY_led1_user, &mem_elf_read);
+//	process_manager_start_process_bybinary(binaries[3], "LED1 User (slow)", PROCESS_PRIORITY_HIGH);
 
-	binaries[3] = osx_init(&BINARY_led1_user, &mem_elf_read);
-	process_manager_start_process_bybinary(binaries[3], "LED1 User (slow)", PROCESS_PRIORITY_HIGH);
+	binaries[5] = osx_init(&BINARY_uart2_user, &mem_elf_read);
+	process_manager_start_process_bybinary(binaries[5], "UART2 User", PROCESS_PRIORITY_HIGH);
 
 	logger_debug("System started ...");
 

@@ -16,7 +16,7 @@ static message_t msg;
 
 #define OSSTD_COPY_MSG(buf, size) { \
 	msg.value.data[2] = (size < DRIVER_BUFFER_SIZE) ? size : DRIVER_BUFFER_SIZE; \
-	memcpy(&msg.value.data[3], buf, msg.value.data[1]); \
+	memcpy(&msg.value.data[3], buf, msg.value.data[2]); \
 }
 
 static int osstd_send_handle(int operation, handle_t* handle, driver_msg_t* buf, size_t size) {

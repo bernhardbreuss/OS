@@ -8,7 +8,7 @@
 #include "dmx.h"
 #include "../../hal/omap3530/uart/uart.h"
 #include "../../service/logger/logger.h"
-#include "../../bit.h"
+#include <bit.h>
 
 uart_t uart2;
 
