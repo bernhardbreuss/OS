@@ -13,11 +13,22 @@
 static message_t msg;
 
 static unsigned int system_start_process(void) {
-	process_name_t name = malloc(sizeof(process_name_t));
-	strncpy((char*)name, &msg.value.buffer[sizeof(unsigned int) * 2], sizeof(PROCESS_MAX_NAME_LENGTH));
+	Process_t* p = process_manager_start_process_bybinary((binary_t*)msg.value.data[1], PROCESS_PRIORITY_HIGH, msg.value.buffer[sizeof(unsigned int) * 3], &msg.value.buffer[sizeof(unsigned int) * 4]);
+	if (p != NULL) {
+		msg.value.data[1] = p->pid;
+	} else {
+		msg.value.data[1] = (unsigned int)PROCESS_INVALID_ID;
 
-	ProcessId_t pid = process_manager_start_process_bybinary((binary_t*)msg.value.data[1], name, PROCESS_PRIORITY_HIGH);
-	msg.value.data[1] = pid;
+		ProcessId_t pid = msg.value.data[2];
+		if (pid != PROCESS_INVALID_ID) {
+			Process_t* other = process_manager_get_process_byid(pid);
+
+			if (other != NULL) {
+				other->stdin = pid;
+				p->stdout = pid;
+			}
+		}
+	}
 
 	return SYSTEM_OK;
 }

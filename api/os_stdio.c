@@ -5,7 +5,7 @@
  *      Author: Bernhard
  */
 
-#include "osstd.h"
+#include "os_stdio.h"
 #include "message.h"
 #include "driver.h"
 #include "ipc.h"
@@ -52,7 +52,7 @@ static int osstd_send_device(int operation, Device_t device, driver_msg_t* buf, 
 	return osstd_send_handle(operation, &handle, buf, size);
 }
 
-int ioctl(Device_t device, driver_msg_t* buf, size_t size) {
+int os_ioctl(Device_t device, driver_msg_t* buf, size_t size) {
 	int ipc = osstd_send_device(DRIVER_IOCTL, device, buf, size);
 	if (ipc == IPC_OK) {
 		return msg.value.data[0];
@@ -61,7 +61,7 @@ int ioctl(Device_t device, driver_msg_t* buf, size_t size) {
 	}
 }
 
-int open(Device_t device, driver_msg_t* buf, size_t size, handle_t* handle, driver_mode_t mode) {
+int os_open(Device_t device, driver_msg_t* buf, size_t size, handle_t* handle, driver_mode_t mode) {
 	msg.value.data[0] = DRIVER_MANAGER_GET;
 	msg.value.data[1] = device;
 	int ipc = ipc_syscall(PROCESS_DRIVER_MANAGER, IPC_SENDREC, &msg);
@@ -86,18 +86,18 @@ int open(Device_t device, driver_msg_t* buf, size_t size, handle_t* handle, driv
 	return ipc;
 }
 
-// closes device and handle is set to NULL
-int close(handle_t* handle) {
+/* closes device and handle is set to NULL */
+int os_close(handle_t* handle) {
 	int return_val = osstd_send_handle(DRIVER_CLOSE, handle, NULL, 0);
 	handle->driver = PROCESS_INVALID_ID;
 	handle->handle = NULL;
 	return return_val;
 }
 
-int write(handle_t* handle, driver_msg_t* buf, size_t size) {
+int os_write(handle_t* handle, driver_msg_t* buf, size_t size) {
 	return osstd_send_handle(DRIVER_WRITE, handle, buf, size);
 }
 
-int read(handle_t* handle, driver_msg_t* buf, size_t size) {
+int os_read(handle_t* handle, driver_msg_t* buf, size_t size) {
 	return osstd_send_handle(DRIVER_WRITE, handle, buf, size);
 }

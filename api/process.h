@@ -10,6 +10,8 @@
 
 #include <inttypes.h>
 
+#define PROCESS_STDOUT -4
+#define PROCESS_STDIN -3
 #define PROCESS_ANY -2
 #define PROCESS_INVALID_ID -1
 #define PROCESS_KERNEL 0
