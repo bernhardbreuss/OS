@@ -2,10 +2,14 @@
 	.global mmu_ttbr_set1
 	.global mmu_start
 	.global mmu_init_hal
-	.global mmu_get_ifsr
-	.global mmu_get_ifar
-	.global mmu_get_dfsr
-	.global mmu_get_dfar
+	.global pabt_handler
+	.global dabt_handler
+
+	; #includes
+	.global process_context_save
+	.global process_context_load
+	.global _mmu_handle_abort
+	.global process_manager_change_process
 
 mmu_ttbr_set0:
 	STMFD R13!, {R2, R3}
@@ -68,18 +72,37 @@ mmu_init_hal:
 
 	MOV PC, R14
 
-mmu_get_ifsr:
+pabt_handler:
+	SUB R14, R14, #4
+	SUB R13, R13, #4
+	STR R14, [R13]
+	BL process_context_save
+	ADD R13, R13, #4
+
 	MRC p15, #0, R0, c5, c0, #1 ; Read Instruction Fault Status Register
-	MOV PC, R14
+	MRC p15, #0, R1, c6, c0, #2 ; Read Instruction Fault Address Register
 
-mmu_get_ifar:
-	MRC p15, #0, R0, c6, c0, #2 ; Read Instruction Fault Address Register
-	MOV PC, R14
+	BL _mmu_handle_abort
 
-mmu_get_dfsr:
+	MOV R0, #0
+	BL process_manager_change_process
+
+	B process_context_load
+
+
+dabt_handler:
+	SUB R14, R14, #8
+	SUB R13, R13, #4
+	STR R14, [R13]
+	BL process_context_save
+	ADD R13, R13, #4
+
 	MRC p15, #0, R0, c5, c0, #0 ; Read Data Fault Status Register
-	MOV PC, R14
+	MRC p15, #0, R1, c6, c0, #0 ; Read Data Fault Address Register
 
-mmu_get_dfar:
-	MRC p15, #0, R0, c6, c0, #0 ; Read Data Fault Address Register
-	MOV PC, R14
+	BL _mmu_handle_abort
+
+	MOV R0, #0
+	BL process_manager_change_process
+
+	B process_context_load

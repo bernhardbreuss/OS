@@ -87,7 +87,7 @@ int os_open(Device_t device, driver_msg_t* buf, size_t size, handle_t* handle, d
 }
 
 /* closes device and handle is set to NULL */
-int close(handle_t* handle) {
+int os_close(handle_t* handle) {
 	int return_val = osstd_send_handle(DRIVER_CLOSE, handle, NULL, 0);
 	handle->driver = PROCESS_INVALID_ID;
 	handle->handle = NULL;

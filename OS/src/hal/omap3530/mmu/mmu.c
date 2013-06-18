@@ -187,32 +187,39 @@ size_t mmu_map(mmu_table_t* table, void* virtual_address, void* physical_address
 	}
 }
 
-static uint8_t _mmu_load_section(mmu_table_t* table, void* virtual_address) {
-	virtual_address = (void*)(((unsigned int)virtual_address) & MMU_SECTION_MASK);
-
-	void* physical_address = ram_manager_reserve_aligned(MMU_SECTION_SIZE, MMU_SECTION_ALIGNMENT);
-	if (physical_address == NULL) {
+static uint8_t _mmu_load(mmu_table_t* table, void* virtual_address) {
+	void* physical_address;
+	size_t size = mmu_reserve(table, &virtual_address, &physical_address);
+	if (size == 0) {
 		return 0;
 	}
 
-	_mmu_map_section(table, virtual_address, physical_address);
-	loader_addload(virtual_address, physical_address, MMU_SECTION_SIZE);
+	loader_addload(virtual_address, physical_address, size);
 
 	return 1;
 }
 
-static uint8_t _mmu_load_small_page(mmu_table_t* table, void* virtual_address) {
-	virtual_address = (void*)(((unsigned int)virtual_address) & MMU_SMALL_PAGE_MASK);
+size_t mmu_reserve(mmu_table_t* table, void** virtual_address, void** physical_address) {
+	size_t size;
+	unsigned int align;
 
-	void* physical_address = ram_manager_reserve_aligned(MMU_SMALL_PAGE_SIZE, MMU_SMALL_PAGE_ALIGNMENT);
-	if (physical_address == NULL || !_mmu_map_small_page(table, virtual_address, physical_address)) {
+	if (table->kernel_table) {
+		size = MMU_SECTION_SIZE;
+		align = MMU_SECTION_ALIGNMENT;
+		*(virtual_address) = (void*)(((unsigned int)*(virtual_address)) & MMU_SECTION_MASK);
+	} else {
+		size = MMU_SMALL_PAGE_SIZE;
+		align = MMU_SMALL_PAGE_ALIGNMENT;
+		*(virtual_address) = (void*)(((unsigned int)*(virtual_address)) & MMU_SMALL_PAGE_MASK);
+	}
+
+	*(physical_address) = ram_manager_reserve_aligned(size, align);
+	if (physical_address == NULL || !mmu_map(table, *(virtual_address), *(physical_address))) {
 		/* TODO: free reserved ram */
 		return 0;
 	}
 
-	loader_addload(virtual_address, physical_address, MMU_SMALL_PAGE_SIZE);
-
-	return 1;
+	return size;
 }
 
 void mmu_activate_process(Process_t* process) {
@@ -251,7 +258,7 @@ void* mmu_get_physical_address(mmu_table_t* table, void* virtual_address) {
 	}
 }
 
-static void _mmu_handle_abort(unsigned int status, void* virtual_address) {
+void _mmu_handle_abort(unsigned int status, void* virtual_address) {
 	status &=  MMU_ABORT_MASK;
 
 	if (status == MMU_ABORT_DEBUG) {
@@ -269,12 +276,12 @@ static void _mmu_handle_abort(unsigned int status, void* virtual_address) {
 			switch (status) {
 			case MMU_ABORT_TRANSLATION_FAULT_SECTION:
 				if (table->kernel_table) {
-					_mmu_load_section(table, virtual_address); /* TODO: handle to less memory */
+					_mmu_load(table, virtual_address); /* TODO: handle to less memory */
 					logger_debug("section for address 0x%08X loaded for process %s", virtual_address, process_manager_current_process->name);
 					return;
 				}
 			case MMU_ABORT_TRANSLATION_FAULT_PAGE: /* when a user process has a fault for a section, it's a hidden fault for a page because the mmu can't know it should be a page fault */
-				_mmu_load_small_page(table, virtual_address); /* TODO: else handle to less memory */
+				_mmu_load(table, virtual_address); /* TODO: else handle to less memory */
 				logger_debug("page for address 0x%08X loaded for process %s", virtual_address, process_manager_current_process->name);
 				return;
 			}
@@ -285,42 +292,4 @@ static void _mmu_handle_abort(unsigned int status, void* virtual_address) {
 	_enable_interrupts();
 	while (1) ;
 	/* TODO: kill process */
-}
-
-interrupt void pabt_handler(void) {
-	asm(" SUB R14, R14, #4");	/* LR = R14; R14-4 is the return address of the IRQ (see ARM System Developers Guid.pdf page 337 */
-	asm(" SUB R13, R13, #4");	/* reserve space for R14 on the stack */
-	asm(" STR R14, [R13]");		/* store R14 on the stack */
-	process_context_save();
-	asm(" ADD R13, R13, #4");	/* release space for R14 on the stack */
-
-	logger_warn("KERNEL INFO: Prefetch abort.");
-
-	unsigned int ifsr = mmu_get_ifsr();
-	void* ifar = mmu_get_ifar();
-
-	_mmu_handle_abort(ifsr, ifar);
-
-	process_manager_change_process(NULL);
-
-	process_context_load();
-}
-
-interrupt void dabt_handler(void) {
-	asm(" SUB R14, R14, #8");	/* LR = R14; R14-4 is the return address of the IRQ (see ARM System Developers Guid.pdf page 337 */
-	asm(" SUB R13, R13, #4");	/* reserve space for R14 on the stack */
-	asm(" STR R14, [R13]");		/* store R14 on the stack */
-	process_context_save();
-	asm(" ADD R13, R13, #4");	/* release space for R14 on the stack */
-
-	logger_warn("KERNEL INFO: data abort");
-
-	unsigned int dfsr = mmu_get_dfsr();
-	void* dfar = mmu_get_dfar();
-
-	_mmu_handle_abort(dfsr, dfar);
-
-	process_manager_change_process(NULL);
-
-	process_context_load();
 }

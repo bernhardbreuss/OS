@@ -69,7 +69,9 @@ static ProcessId_t driver_manager_start_driver(Device_t device) {
 
 	msg.value.data[0] = SYSTEM_START_PROCESS;
 	msg.value.data[1] = (unsigned int)mapping->driver_binary;
-	strncpy(&msg.value.buffer[sizeof(unsigned int) * 2], mapping->name, sizeof(PROCESS_MAX_NAME_LENGTH));
+	msg.value.data[2] = PROCESS_INVALID_ID;
+	msg.value.data[3] = 1;
+	strncpy(&msg.value.buffer[sizeof(unsigned int) * 4], mapping->name, PROCESS_MAX_NAME_LENGTH);
 
 	unsigned int ipc = ipc_syscall(PROCESS_KERNEL, IPC_SENDREC, &msg);
 
@@ -114,7 +116,7 @@ void main(void) {
 			case DRIVER_MANAGER_ADD:
 				name = malloc(PROCESS_MAX_NAME_LENGTH);
 				if (name != NULL) {
-					strncpy(name, &msg.value.buffer[12], sizeof(PROCESS_MAX_NAME_LENGTH));
+					strncpy(name, &msg.value.buffer[12], PROCESS_MAX_NAME_LENGTH);
 				} else {
 					name = "/* NO NAME BECAUSE NOT ENOUGH MEMORY */";
 				}

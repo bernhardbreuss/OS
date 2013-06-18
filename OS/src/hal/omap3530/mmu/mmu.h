@@ -49,23 +49,11 @@
 void mmu_ttbr_set0(unsigned int value, unsigned int contextidr);
 void mmu_ttbr_set1(unsigned int value);
 
-unsigned int mmu_get_ifsr(void);
-void* mmu_get_ifar(void);
-unsigned int mmu_get_dfsr(void);
-void* mmu_get_dfar(void);
-
 #define MMU_ABORT_TRANSLATION_FAULT_SECTION 0x5
 #define MMU_ABORT_TRANSLATION_FAULT_PAGE 0x7
 #define MMU_ABORT_DEBUG 0x2
 
 #define MMU_ABORT_MASK 0x140F
 
-#pragma INTERRUPT(dabt_handler, DABT);
-#pragma TASK(dabt_handler);
-void dabt_handler(void);
-
-#pragma INTERRUPT(pabt_handler, PABT);
-#pragma TASK(pabt_handler);
-void pabt_handler(void);
 
 #endif /* OMAP3530_MMU_H_ */

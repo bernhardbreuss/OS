@@ -13,11 +13,7 @@
 static message_t msg;
 
 static unsigned int system_start_process(void) {
-	process_name_t name = malloc(sizeof(process_name_t));
-	strncpy((char*)name, &msg.value.buffer[sizeof(unsigned int) * 3], sizeof(PROCESS_MAX_NAME_LENGTH));
-
-
-	Process_t* p = process_manager_start_process_bybinary((binary_t*)msg.value.data[1], name, PROCESS_PRIORITY_HIGH);
+	Process_t* p = process_manager_start_process_bybinary((binary_t*)msg.value.data[1], PROCESS_PRIORITY_HIGH, msg.value.buffer[sizeof(unsigned int) * 3], &msg.value.buffer[sizeof(unsigned int) * 4]);
 	if (p != NULL) {
 		msg.value.data[1] = p->pid;
 	} else {
