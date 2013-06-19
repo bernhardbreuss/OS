@@ -23,6 +23,8 @@
 #include "binary.h"
 #include "hal/generic/irq/irq.h"
 #include <string.h>
+//#include "hal/generic/fs/fs.h"
+//#include "hal/omap3530/fs/types.h"
 
 #pragma INTERRUPT(udef_handler, UDEF);
 interrupt void udef_handler() {
@@ -126,6 +128,14 @@ void main(void) {
 	binaries[2] = osx_init(&BINARY_led0_user, &mem_elf_read);
 	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(fast) 21 450000");
 	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(slow) 22 900000");
+
+//	fs_init();
+//	fl_listdirectory("/");
+//	file_handle_t handle = fl_fopen("/test.txt", "r");
+//	logger_debug((char*)handle);
+//	char buffer[116];
+//	fl_fgets(buffer, 116, handle);
+//	logger_debug(buffer);
 
 //	binaries[3] = osx_init(&BINARY_led1_user, &mem_elf_read);
 //	process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, 1, "LED1 User (slow)");
