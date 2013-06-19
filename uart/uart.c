@@ -16,7 +16,7 @@ static uart_t* uart = NULL;
 static uart_protocol_format_t protocol;
 static uart_owner_t owner = {0x0, 0x1};
 
-static void uart_get(int uart_nr, uart_t* uart);
+static int uart_get(int uart_nr, uart_t* uart);
 static void uart_init(uart_t* const uart, uart_protocol_format_t protocol);
 static void uart_software_reset(uart_t* const uart);
 static int uart_switch_to_config_mode_b(uart_t* const uart);
@@ -30,19 +30,6 @@ static void uart_write_character(uart_t* const uart, char* buffer);
 static void uart_write_uint8_t(uart_t* const uart, uint8_t* buffer);
 static int uart_is_empty_read_queue(uart_t* const uart);
 static int uart_is_empty_write_queue(uart_t* const uart);
-
-static int uart_ioctl(driver_msg_t* buf, size_t size) {
-	if(size < sizeof(unsigned int))
-		return NULL;
-
-	//TODO: delete if process start with arguments possible
-
-	if(!owner.owned){
-		unsigned int device_number = buf->data[0];
-		uart_get(device_number, uart);
-	}
-	return 1;
-}
 
 static void* uart_open(driver_msg_t* buf, size_t size, driver_mode_t mode) {
 	if(size < sizeof(unsigned int))
@@ -84,18 +71,32 @@ static int uart_read(void* handle, driver_msg_t* buf, size_t size) {
 }
 
 Driver_t driver = {
-		uart_ioctl,
+		NULL,
 		uart_open,
 		uart_close,
 		uart_read,
 		uart_write
 };
 
-void main(void) {
-	driver_init();
+int main(int argc, char* argv[]) {
+
+	int exit_code = -1;
+
+	if(argc == 2) {
+		int device_number = strtol(argv[1], NULL, 10);
+		exit_code = uart_get(device_number, uart);
+	}
+
+	if(exit_code != 0) {
+		while(1);
+	} else {
+		driver_init();
+	}
+
+	return exit_code;
 }
 
-static void uart_get(int uart_nr, uart_t* uart) {
+static int uart_get(int uart_nr, uart_t* uart) {
 	unsigned int uart_base_address;
 
 	switch(uart_nr) {
@@ -103,11 +104,7 @@ static void uart_get(int uart_nr, uart_t* uart) {
 		case 22 : uart_base_address = ((unsigned int) 0x4806C000); break;
 		case 23 : uart_base_address = ((unsigned int) 0x49020000); break;
 		default:
-//			uart_t fault = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-//					NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
-//			*uart = fault;
-			uart = NULL;
-			return;
+			return -1;
 	}
 
 	uart->DLL_REG = (unsigned int*) (uart_base_address + UART_DLL_REG_OFFSET);
@@ -150,6 +147,8 @@ static void uart_get(int uart_nr, uart_t* uart) {
 	uart->SYSS_REG = (unsigned int*) (uart_base_address + UART_SYSS_REG_OFFSET);
 	uart->WER_REG = (unsigned int*) (uart_base_address + UART_WER_REG_OFFSET);
 	uart->CFPS_REG = (unsigned int*) (uart_base_address + UART_CFPS_REG_OFFSET);
+
+	return 0;
 }
 
 static void uart_init(uart_t* const uart, uart_protocol_format_t protocol) {

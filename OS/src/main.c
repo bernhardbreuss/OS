@@ -110,25 +110,27 @@ void main(void) {
 	msg.value.data[0] = DRIVER_MANAGER_ADD;
 	msg.value.data[1] = GPIO5;
 	msg.value.data[2] = (unsigned int)(binaries[1]);
-	process_name_t name = "GPIO";
+	char* name = "GPIO";
 	strncpy(&(msg.value.buffer[12]), name, PROCESS_MAX_NAME_LENGTH);
-	ipc_syscall(driver_manager->pid, IPC_SENDREC, &msg); /* TODO: check return value */
+	/* TODO: check return value */
+	ipc_syscall(driver_manager->pid, IPC_SENDREC, &msg);
 
 	/* add drivers to the driver manager */
 	binaries[4] = osx_init(&BINARY_uart, &mem_elf_read);
 	msg.value.data[0] = DRIVER_MANAGER_ADD;
 	msg.value.data[1] = UART2;
 	msg.value.data[2] = (unsigned int)(binaries[4]);
-	name = "UART2";
+	name = "UART 22";
 	memcpy(&(msg.value.buffer[12]), name, PROCESS_MAX_NAME_LENGTH);
-	ipc_syscall(driver_manager->pid, IPC_SENDREC, &msg); /* TODO: check return value */
+	/* TODO: check return value */
+	ipc_syscall(driver_manager->pid, IPC_SENDREC, &msg);
 
 	binaries[2] = osx_init(&BINARY_led0_user, &mem_elf_read);
-	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(fast) 21 450000");
-	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(slow) 22 900000");
+//	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(fast) 21 450000");
+//	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(slow) 22 900000");
 
-//	binaries[5] = osx_init(&BINARY_uart2_user, &mem_elf_read);
-//	process_manager_start_process_bybinary(binaries[5], "UART2 User", PROCESS_PRIORITY_HIGH);
+	binaries[3] = osx_init(&BINARY_uart2_user, &mem_elf_read);
+	process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, "UART2_user_proc");
 
 	logger_debug("System started ...");
 
