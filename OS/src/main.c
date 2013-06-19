@@ -23,6 +23,7 @@
 #include "binary.h"
 #include "hal/generic/irq/irq.h"
 #include <string.h>
+#include "driver/dmx/dmx.h"
 
 #pragma INTERRUPT(udef_handler, UDEF);
 interrupt void udef_handler() {
@@ -129,6 +130,8 @@ void main(void) {
 
 //	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(fast) 21 450000");
 //	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(slow) 22 900000");
+
+	dmx_uart_set_send_mode();
 
 	binaries[3] = osx_init(&BINARY_uart2_user, &mem_elf_read);
 	process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, "UART2_user_proc");

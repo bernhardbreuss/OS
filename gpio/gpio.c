@@ -19,7 +19,7 @@ static void* gpio_open(driver_msg_t* buf, size_t size, driver_mode_t mode) {
 	unsigned int values[1];
 	unsigned int addresses[1];
 	values[0] = GPIO5_OE;
-	unsigned int oe = memory_mapped_read(values, 1);
+	int oe = memory_mapped_read(values, 1);
 
 	switch (mode) {
 	case DRIVER_MODE_READ:

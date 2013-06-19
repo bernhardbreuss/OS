@@ -12,6 +12,9 @@
 #include <stdlib.h>
 
 int memory_mapped_read(unsigned int address[], size_t size){
+
+	//TODO: stephan: multiple ipc's at once
+
 	message_t ipc_msg;
 	int i;
 	ipc_msg.value.data[0] = MEM_IO_READ;
@@ -24,8 +27,8 @@ int memory_mapped_read(unsigned int address[], size_t size){
 	if((ipc_msg.size - 1) != size){
 		return -1;
 	}
-	for(i = 1; i <= ipc_msg.size; i++){
-		address[i-1] = ipc_msg.value.data[i];
+	for(i = 0; i < size; i++){
+		address[i] = ipc_msg.value.data[i+1];
 	}
 
 	return 0;
