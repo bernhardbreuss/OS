@@ -47,11 +47,13 @@ static unsigned int mem_io_read(message_t *msg){
 
 	unsigned int* address;
 	unsigned int address_data;
+	int i;
 
-	address = (unsigned int*) msg->value.data[2];
-	address_data = *address;
-	msg->value.data[1] =  address_data;
-
+	for( i = 1 ; i < msg->size; i++ ){
+		address = (unsigned int*) msg->value.data[i];
+		address_data = *address;
+		msg->value.data[i] =  address_data;
+	}
 	return SYSTEM_OK;
 
 }
@@ -59,9 +61,12 @@ static unsigned int mem_io_read(message_t *msg){
 static unsigned int mem_io_write(message_t *msg){
 
 	unsigned int* address;
+	int i;
 
-	address = (unsigned int*) msg->value.data[2];
-	*address = msg->value.data[1];
+	for( i = 1 ; i < msg->size; i += 2 ){
+		address = (unsigned int*) msg->value.data[i+1];
+		*address = msg->value.data[i];
+	}
 
 	return SYSTEM_OK;
 }

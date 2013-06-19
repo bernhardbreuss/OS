@@ -116,8 +116,8 @@ void main(void) {
 	binaries[2] = osx_init(&BINARY_led0_user, &mem_elf_read);
 	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, 1, "LED0 User (fast)");
 
-	binaries[3] = osx_init(&BINARY_led1_user, &mem_elf_read);
-	process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, 1, "LED1 User (slow)");
+//	binaries[3] = osx_init(&BINARY_led1_user, &mem_elf_read);
+//	process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, 1, "LED1 User (slow)");
 
 	logger_debug("System started ...");
 
