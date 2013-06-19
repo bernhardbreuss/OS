@@ -27,7 +27,10 @@ static Process_t* _process_manager_scheduler_get_next_process(void);
 
 static linked_list_t processes;
 static linked_list_t ready_processes[PROCESS_PRIORITY_COUNT]; /* one list for each priority */
+static linked_list_t sleeping_processes;
 static ProcessId_t nextProcessId;
+
+static unsigned int current_slice = 0;
 
 Process_t* process_manager_current_process;
 Process_t process_manager_kernel_process;
@@ -37,6 +40,12 @@ void* process_context_pointer;
 extern void* idle_process_virtual;
 extern void* idle_process_physical;
 extern void* idle_process_size;
+
+typedef struct {
+	Process_t* process;
+	unsigned int wake_up;
+	uint8_t overflow;
+} sleep_t;
 
 static Process_t* _process_manager_start_process(Process_t* process, mmu_table_t* page_table, ProcessPriority_t priority, char* args, uint8_t load_args) {
 	process->name = malloc(PROCESS_MAX_NAME_LENGTH);
@@ -66,11 +75,11 @@ static Process_t* _process_manager_start_process(Process_t* process, mmu_table_t
 
 void process_manager_init(mmu_table_t* kernel_page_table) {
 	linked_list_init(&processes);
-
 	int i;
 	for (i = 0; i < (sizeof(ready_processes) / sizeof(linked_list_t)); i++) {
 		linked_list_init(&ready_processes[i]);
 	}
+	linked_list_init(&sleeping_processes);
 
 	nextProcessId = PROCESS_SYSTEM;
 	process_manager_kernel_process.binary = NULL;
@@ -196,6 +205,31 @@ static void _process_manager_irq_schedule_handler(void) {
 	/* clear all pending interrupts */
 	gptimer_clear_pending_interrupts(&_schedule_timer);
 
+	linked_list_node_t* node = sleeping_processes.head;
+	while (node != NULL) {
+		sleep_t* sleep = node->value;
+		if (sleep->wake_up > current_slice) {
+			break;
+		}
+		process_manager_set_process_ready(sleep->process);
+
+		linked_list_node_t* tmp = node->next;
+		linked_list_remove(&sleeping_processes, node);
+		free(sleep);
+
+		node = tmp;
+	}
+	current_slice++;
+	if (current_slice == 0) {
+		/* reset overflow flag */
+		node = sleeping_processes.head;
+		while (node != NULL) {
+			sleep_t* sleep = node->value;
+			sleep->overflow = 0;
+			node = node->next;
+		}
+	}
+
 	process_manager_change_process(NULL);
 }
 
@@ -264,4 +298,41 @@ void process_manager_block_current_process(void) {
 	/* logger_debug("process_manager: blocking %i:%s", process_manager_current_process->pid, process_manager_current_process->name); */
 
 	process_manager_current_process->state = PROCESS_BLOCKED;
+}
+
+void process_manager_sleep_current_process(unsigned int duration) {
+	if (duration == 0) {
+		return;
+	}
+
+	sleep_t* sleep = malloc(sizeof(sleep_t));
+	if (sleep == NULL) {
+		return;
+	}
+
+	sleep->wake_up = current_slice + (duration / SCHEDULER_TIME_SLICE_DURATION) + 1;
+	sleep->overflow = (sleep->wake_up <= current_slice);
+	sleep->process = process_manager_current_process;
+
+	linked_list_node_t* node = sleeping_processes.head;
+	while (node != NULL) {
+		sleep_t* other_sleep = node->value;
+		if ((other_sleep->wake_up > sleep->wake_up && other_sleep->overflow == other_sleep->overflow) || other_sleep->overflow > sleep->overflow) {
+			break;
+		}
+		node = node->next;
+	}
+	if (node == NULL) {
+		linked_list_add(&sleeping_processes, sleep);
+	} else {
+		node = node->prev;
+		if (node == NULL) {
+			linked_list_insert_begin(&sleeping_processes, sleep);
+		} else {
+			linked_list_insert(&sleeping_processes, node, sleep);
+		}
+	}
+
+	process_manager_block_current_process();
+	process_manager_change_process(NULL);
 }

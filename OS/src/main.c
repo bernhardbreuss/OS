@@ -124,8 +124,8 @@ void main(void) {
 	ipc_syscall(driver_manager->pid, IPC_SENDREC, &msg); /* TODO: check return value */
 
 	binaries[2] = osx_init(&BINARY_led0_user, &mem_elf_read);
-	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(fast) 21 450000 10");
-	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(slow) 22 900000");
+	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(fast) 21 100 100");
+	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(slow) 22 1000");
 
 	/*
 	// test code for binary_map

@@ -5,6 +5,7 @@
 	.global process_context_load
 
 	.global process_manager_change_process
+	.global process_manager_sleep_current_process
 
 _swi_handle_syscall:
 	BL	ipc_handle_syscall		; call syscall handler
@@ -28,6 +29,9 @@ swi_handler:
 
 	CMP R11, #0x1				; check for change process
 	BEQ _swi_handler_change_process
+
+	CMP R11, #0x2				; check for sleep
+	BEQ _swi_handler_sleep_process
 
 	; else invalid operation
 	LDMFD R13!, {R11-R12}
@@ -63,3 +67,16 @@ _swi_handler_change_process:
 	BL process_manager_change_process
 
 	B process_context_load		; load new process
+
+_swi_handler_sleep_process:
+	LDMFD R13!, {R11-R12}
+
+	SUB R13, R13, #4			; place user PC on top of stack
+	STR R14, [R13]
+
+	BL process_context_save		; save context
+
+	ADD R13, R13, #4			; pop user PC from stack
+
+	BL process_manager_sleep_current_process
+	B process_context_load
