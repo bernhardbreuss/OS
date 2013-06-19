@@ -9,11 +9,11 @@
 
 MEMORY
 {
-   USER_SPACE:  	 	ORIGIN = 0x00000000  LENGTH = 0x0FFFFFFF
+   USER_SPACE:  	 	ORIGIN = 0x00000000  LENGTH = 0x3FFFF000
+   ARGUMENTS:			ORIGIN = 0x3FFFF000  LENGTH = 0x00001000
 }
 
 stackSize = 0x20000;
-pageSize = 0x1000;
 
 SECTIONS
 {
@@ -27,4 +27,10 @@ SECTIONS
    .text       > USER_SPACE
    .sysmem     > USER_SPACE
    .switch     > USER_SPACE
+
+   .arguments  > ARGUMENTS {
+		ARGS_ADDR = .;
+		. += 500; // arguments max length
+   		ARGV_ADDR = .;
+   }
 }

@@ -23,9 +23,6 @@
  */
 void gptimer_get_schedule_timer(gptimer_t* schedule_timer);
 
-//TODO: should not be declared here
-//move it to src/hal/oamp3530/timer/timer.h
-//current dependency by pwm_get_timer.h
 void gptimer_get(int timer_nr, gptimer_t* timer);
 
 /**

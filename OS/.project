@@ -6,7 +6,10 @@
 		<project>util</project>
 		<project>api</project>
 		<project>driver_manager</project>
-		<project>led1_user</project>
+		<project>gpio</project>
+		<project>led0_user</project>
+		<project>uart</project>
+		<project>uart2_user</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

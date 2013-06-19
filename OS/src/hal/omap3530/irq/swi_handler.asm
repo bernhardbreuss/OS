@@ -6,29 +6,34 @@
 
 	.global process_manager_change_process
 
-_handle_syscall:
+_swi_handle_syscall:
 	BL	ipc_handle_syscall		; call syscall handler
+
 	LDMFD R13!, {R1-R2}			; load user PC and SPSR
-	MSR CPSR_cxsf, R2			; return back to user mode
-	MOV PC, R1					; back to user program
+
+	CPS #0x11
+	MSR SPSR_cxsf, R2			; return back to user mode
+	MOVS PC, R1					; back to user program
 
 swi_handler:
 	STMFD R13!, {R11-R12}		; backup R11, R12
 
-	LDR R11, [R14, #-4]			; load SWI instruction
+	;LDR R11, [R14, #-4]			; load SWI instruction
+	SUB R11, R14, #4
+	LDR R11, [R11]
 	BIC R11, R11, #0xFF000000	; mask off the MSB 8 bits
 
 	CMP R11, #0x0				; check for syscall
-	BEQ swi_handler_syscall
+	BEQ _swi_handler_syscall
 
 	CMP R11, #0x1				; check for change process
-	BEQ swi_handler_change_process
+	BEQ _swi_handler_change_process
 
 	; else invalid operation
 	LDMFD R13!, {R11-R12}
 	MOVS PC, R14
 
-swi_handler_syscall:
+_swi_handler_syscall:
 	MRS R12, SPSR				; load SPSR into R12
 
 	MOV R11, R14				; load R14 (user PC) into R11
@@ -43,9 +48,9 @@ swi_handler_syscall:
 
 	LDMFD R13!, {R11-R12}		; load backuped R11, R12
 
-	ADRS PC, _handle_syscall	; end interrupt
+	ADRS PC, _swi_handle_syscall; end interrupt
 
-swi_handler_change_process:
+_swi_handler_change_process:
 	LDMFD R13!, {R11-R12}
 
 	SUB R13, R13, #4			; place user PC on top of stack

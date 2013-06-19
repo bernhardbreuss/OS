@@ -15,8 +15,6 @@
 #include <message.h>
 #include <process.h>
 
-#define process_name_t char*
-
 typedef enum {
 	PROCESS_READY,
 	PROCESS_RUNNING,
@@ -43,6 +41,8 @@ typedef struct {
 	char* name;
 	binary_t* binary;
 	mmu_table_t* page_table;
+	ProcessId_t stdin;
+	ProcessId_t stdout;
 } Process_t;
 
 #endif /* PS_H_ */

@@ -8,9 +8,9 @@
 #ifndef OMAP3530_MMU_H_
 #define OMAP3530_MMU_H_
 
-#include "../../../bit.h"
+#include <bit.h>
 
-#define MMU_USER_N 0x1
+#define MMU_USER_N 0x2
 
 #define MMU_FIRST_LEVEL_KERNEL_TABLE_SIZE	0x4000 /* 16KB */
 #define MMU_FIRST_LEVEL_USER_TABLE_SIZE		(MMU_FIRST_LEVEL_KERNEL_TABLE_SIZE >> MMU_USER_N)
@@ -48,11 +48,6 @@
 
 void mmu_ttbr_set0(unsigned int value, unsigned int contextidr);
 void mmu_ttbr_set1(unsigned int value);
-
-unsigned int mmu_get_ifsr(void);
-void* mmu_get_ifar(void);
-unsigned int mmu_get_dfsr(void);
-void* mmu_get_dfar(void);
 
 #define MMU_ABORT_TRANSLATION_FAULT_SECTION 0x5
 #define MMU_ABORT_TRANSLATION_FAULT_PAGE 0x7

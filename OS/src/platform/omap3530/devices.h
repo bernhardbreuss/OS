@@ -18,7 +18,8 @@
 #define LED0	11
 #define LED1	12
 
-#define DEVICES { GPIO5, LED0, LED1 }
-
+#define UART1 	21
+#define UART2 	22
+#define UART3 	23
 
 #endif /* PLATFORM_OMAP3530_DEVICES_H_ */

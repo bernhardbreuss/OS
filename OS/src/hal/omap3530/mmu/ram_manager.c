@@ -16,10 +16,21 @@ uint32_t ram_manager_align_index(unsigned int alignment, unsigned int* index, ui
 	unsigned int next_aligned = (last_aligned + alignment);
 	unsigned int difference = (last_aligned - RAM_MANAGER_START_ADDRESS) / RAM_MANAGER_PAGE_SIZE;
 
-	*(index) = (difference / 32);
-	*(bit) = (difference % 32);
+	unsigned int new_index = (difference / 32);
+	uint32_t new_bit = (difference % 32);
 
-	return (next_aligned - last_aligned) / RAM_MANAGER_PAGE_SIZE;
+	uint32_t bitstep = (next_aligned - last_aligned) / RAM_MANAGER_PAGE_SIZE;
+
+	if (new_index < *(index) || new_bit < *(bit)) {
+		new_bit += bitstep;
+		new_index += (new_bit / 32);
+		new_bit = (new_bit % 32);
+	}
+
+	*(index) = new_index;
+	*(bit) = new_bit;
+
+	return bitstep;
 }
 
 void* ram_manager_get_address(uint32_t index, uint32_t bit) {

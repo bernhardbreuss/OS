@@ -10,7 +10,7 @@
 
 #include "../../../service/logger/logger.h"
 #include "../../generic/uart/uart.h"
-#include "../../../bit.h"
+#include <bit.h>
 #include <stdlib.h>
 
 #define UART1 		((unsigned int) 0x4806A000)

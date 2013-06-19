@@ -18,6 +18,7 @@
 #include <ipc.h>
 #include "../../idle_process.h"
 #include "../loader/loader.h"
+#include <argument_helper.h>
 
 static gptimer_t _schedule_timer;
 
@@ -29,6 +30,7 @@ static linked_list_t ready_processes[PROCESS_PRIORITY_COUNT]; /* one list for ea
 static ProcessId_t nextProcessId;
 
 Process_t* process_manager_current_process;
+Process_t process_manager_kernel_process;
 
 void* process_context_pointer;
 
@@ -36,19 +38,30 @@ extern void* idle_process_virtual;
 extern void* idle_process_physical;
 extern void* idle_process_size;
 
-static ProcessId_t _process_manager_start_process(Process_t* process, mmu_table_t* page_table, char* name, ProcessPriority_t priority) {
-	process->name = name;
+static Process_t* _process_manager_start_process(Process_t* process, mmu_table_t* page_table, ProcessPriority_t priority, char* args, uint8_t load_args) {
+	/* copy first argument into kernel for use as pcb */
+	process->name = malloc(PROCESS_MAX_NAME_LENGTH);
+	strncpy(process->name, args, PROCESS_MAX_NAME_LENGTH);
+	process->name[PROCESS_MAX_NAME_LENGTH - 1] = '\0';
+
 	process->ipc.call_type = IPC_NOOP;
 	linked_list_init(&process->ipc.sender);
 	process->page_table = page_table;
 	process->priority = priority;
 	process->state = PROCESS_READY;
 
+	if (load_args) {
+		void* args_address = &ARGS_ADDR;
+		void* args_physical;
+		mmu_reserve(page_table, &args_address, &args_physical);
+		strncpy(args_physical, args, ARGUMENTS_MAX_LENGTH);
+	}
+
 	process->pid = nextProcessId++;
 	linked_list_add(&processes, process);
 	linked_list_add(&ready_processes[priority], process);
 
-	return process->pid;
+	return process;
 }
 
 void process_manager_init(mmu_table_t* kernel_page_table) {
@@ -60,12 +73,11 @@ void process_manager_init(mmu_table_t* kernel_page_table) {
 	}
 
 	nextProcessId = PROCESS_KERNEL;
-	static Process_t kernel;
-	kernel.binary = NULL;
-	_process_manager_start_process(&kernel, kernel_page_table, "Kernel", PROCESS_PRIORITY_HIGH);
-	kernel.state = PROCESS_RUNNING;
-	process_manager_current_process = &kernel;
-	process_context_pointer = kernel.saved_context;
+	process_manager_kernel_process.binary = NULL;
+	_process_manager_start_process(&process_manager_kernel_process, kernel_page_table, PROCESS_PRIORITY_HIGH, "System", 0);
+	process_manager_kernel_process.state = PROCESS_RUNNING;
+	process_manager_current_process = &process_manager_kernel_process;
+	process_context_pointer = process_manager_kernel_process.saved_context;
 
 	mmu_start();
 
@@ -73,7 +85,7 @@ void process_manager_init(mmu_table_t* kernel_page_table) {
 	static Process_t loader;
 	loader.binary = NULL;
 	process_context_init_byfunc(&loader, &loader_main, 1);
-	_process_manager_start_process(&loader, kernel_page_table, "Loader", PROCESS_PRIORITY_HIGH);
+	_process_manager_start_process(&loader, kernel_page_table, PROCESS_PRIORITY_HIGH, "Loader", 0);
 	process_manager_run_process(&loader); /* give the loader process the possibility to initialize before another process could be started */
 
 	/* start idle process */
@@ -85,15 +97,15 @@ void process_manager_init(mmu_table_t* kernel_page_table) {
 	gptimer_start(&_schedule_timer);
 }
 
-ProcessId_t process_manager_start_process_byfunc(process_func_t func, char* name, ProcessPriority_t priority, unsigned int virtual_address, unsigned int physical_address, unsigned int size) {
+Process_t* process_manager_start_process_byfunc(process_func_t func, process_name_t name, ProcessPriority_t priority, unsigned int virtual_address, unsigned int physical_address, unsigned int size) {
 	Process_t* process = malloc(sizeof(Process_t));
 	if (process == NULL) {
-		return INVALID_PROCESS_ID;
+		return NULL;
 	}
 	mmu_table_t* page_table = mmu_init_process(0);
 	if (page_table == NULL) {
 		free(process);
-		return INVALID_PROCESS_ID;
+		return NULL;
 	}
 
 	unsigned int end_address = virtual_address + (unsigned int)size;
@@ -102,7 +114,7 @@ ProcessId_t process_manager_start_process_byfunc(process_func_t func, char* name
 		if (mapped == 0) {
 			/* TODO: destroy page table */
 			free(process);
-			return INVALID_PROCESS_ID;
+			return NULL;
 		}
 
 		virtual_address += mapped;
@@ -111,23 +123,23 @@ ProcessId_t process_manager_start_process_byfunc(process_func_t func, char* name
 
 	process->binary = NULL;
 	process_context_init_byfunc(process, func, 0);
-	return _process_manager_start_process(process, page_table, name, priority);
+	return _process_manager_start_process(process, page_table, priority, name, 1);
 }
 
-ProcessId_t process_manager_start_process_bybinary(binary_t* binary, char* name, ProcessPriority_t priority) {
+Process_t* process_manager_start_process_bybinary(binary_t* binary, ProcessPriority_t priority, char* argv) {
 	Process_t* process = malloc(sizeof(Process_t));
 	if (process == NULL) {
-		return INVALID_PROCESS_ID;
+		return NULL;
 	}
 	mmu_table_t* page_table = mmu_init_process(0);
 	if (page_table == NULL) {
 		free(process);
-		return INVALID_PROCESS_ID;
+		return NULL;
 	}
 
 	process->binary = binary;
 	process_context_init_bybinary(process, binary);
-	return _process_manager_start_process(process, page_table, name, priority);
+	return _process_manager_start_process(process, page_table, priority, argv, 1);
 }
 
 void process_manager_change_process(Process_t* process) {
@@ -150,6 +162,20 @@ void process_manager_change_process(Process_t* process) {
 	mmu_activate_process(process);
 
 	logger_debug("Current process: #%u %s", process->pid, process->name);
+}
+
+Process_t* process_manager_get_process_byname(process_name_t name) {
+	linked_list_node_t* node = processes.head;
+	while (node != NULL) {
+		Process_t* p = (Process_t*)node->value;
+		if (strncmp(name, p->name, PROCESS_MAX_NAME_LENGTH) == 0) {
+			return p;
+		}
+
+		node = node->next;
+	}
+
+	return NULL;
 }
 
 Process_t* process_manager_get_process_byid(ProcessId_t id) {
@@ -193,6 +219,8 @@ void process_manager_set_process_ready(Process_t* process) {
 		return;
 	}
 
+	/* logger_debug("process_manager: readying %i:%s", process->pid, process->name); */
+
 	process->state = PROCESS_READY;
 	linked_list_insert_begin(&ready_processes[process->priority], process);
 }
@@ -201,6 +229,8 @@ void process_manager_block_current_process(void) {
 	if (process_manager_current_process->state == PROCESS_BLOCKED) {
 		return;
 	}
+
+	/* logger_debug("process_manager: blocking %i:%s", process_manager_current_process->pid, process_manager_current_process->name); */
 
 	process_manager_current_process->state = PROCESS_BLOCKED;
 	linked_list_node_t* node = ready_processes[process_manager_current_process->priority].head;

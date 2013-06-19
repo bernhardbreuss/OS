@@ -5,26 +5,21 @@
  *      Author: Bernhard
  */
 
-#include "driver_manager.h"
+#include <driver_manager.h>
 #include <device.h>
 #include <linked_list.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ipc.h>
-#include <kernel.h>
+#include <system.h>
+#include <process.h>
+#include <argument_helper.h>
 
 typedef struct {
 	Device_t device;
-	Driver_t* driver;
+	void* driver_binary;
+	char command_line[ARGUMENTS_MAX_LENGTH];
 	ProcessId_t process_id;
-	ProcessId_t (*start_process)(Device_t device); /* later this should be the path to load the driver from fs and a IPC call to process manager to start that process */
-	driver_type_t type;
-	char* driver_path;
-	process_func_t main_func;
-	unsigned int virtual_address;
-	unsigned int physical_address;
-	unsigned int size;
-	char* name;
 } device_driver_map;
 
 static linked_list_t device_list; /* already mapped drivers */
@@ -32,27 +27,27 @@ static linked_list_t drivers; /* all available drivers */
 
 static message_t msg;
 
-void driver_manager_init(void) {
+static void driver_manager_init(void) {
 	linked_list_init(&device_list);
 	linked_list_init(&drivers);
 }
 
-void driver_manager_add_driver(Device_t device, Driver_t* driver, ProcessId_t (*start_process)(Device_t device)) {
+static void driver_manager_add_driver(Device_t device, void* driver_binary, char* command_line) {
 	device_driver_map* mapping = malloc(sizeof(device_driver_map));
 
 	if (mapping == NULL) {
-		/* TODO: oO */
+		/* TODO: handle too less memory */
 		return;
 	}
 
 	mapping->device = device;
-	mapping->driver = driver;
-	mapping->start_process = start_process;
+	mapping->driver_binary = driver_binary;
+	strncpy(mapping->command_line, command_line, sizeof(mapping->command_line));
 
-	linked_list_add(&drivers, mapping);
+	linked_list_add(&drivers, mapping); /* TODO: check for too less memory */
 }
 
-device_driver_map* get_driver(Device_t device) {
+static device_driver_map* driver_manager_get_driver(Device_t device) {
 	device_driver_map* mapping;
 	linked_list_node_t* node = drivers.head;
 
@@ -61,39 +56,36 @@ device_driver_map* get_driver(Device_t device) {
 		if (mapping->device == device) {
 			return mapping;
 		}
+		node = node->next;
 	}
 
 	return NULL;
 }
 
-ProcessId_t start_driver(Device_t device) {
-	device_driver_map* mapping = get_driver(device);
+static ProcessId_t driver_manager_start_driver(Device_t device) {
+	device_driver_map* mapping = driver_manager_get_driver(device);
 	if (mapping == NULL) {
-		return INVALID_PROCESS_ID;
+		return PROCESS_INVALID_ID;
 	}
 
-	linked_list_add(&device_list, mapping);
+	msg.value.data[0] = SYSTEM_START_PROCESS;
+	msg.value.data[1] = (unsigned int)mapping->driver_binary;
+	msg.value.data[2] = (unsigned int)PROCESS_INVALID_ID;
+	strncpy(&msg.value.buffer[sizeof(unsigned int) * 3], mapping->command_line, sizeof(mapping->command_line));
 
-	msg.value.data[0] = KERNEL_START_PROCESS;
-	if (mapping->type == driver_type_intern) {
-		msg.value.data[1] = KERNEL_START_PROCESS_BYFUNC;
-		msg.value.data[2] = (unsigned int)mapping->main_func;
-		msg.value.data[3] = mapping->virtual_address;
-		msg.value.data[4] = mapping->physical_address;
-		msg.value.data[5] = mapping->size;
-		memcpy(&msg.value.data[6], mapping->name, strlen(mapping->name));
-	} else {
-		msg.value.data[1] = KERNEL_START_PROCESS_BYPATH;
-		memcpy(&msg.value.data[2], mapping->driver_path, strlen(mapping->driver_path));
+	unsigned int ipc = ipc_syscall(PROCESS_KERNEL, IPC_SENDREC, &msg);
+
+	if (ipc != IPC_OK || msg.value.data[0] != SYSTEM_OK) {
+		return PROCESS_INVALID_ID;
 	}
-
-	ipc_syscall(PROCESS_KERNEL, IPC_SENDREC, &msg);
 
 	mapping->process_id = msg.value.data[1];
+	linked_list_add(&device_list, mapping);
+
 	return mapping->process_id;
 }
 
-ProcessId_t driver_manager_get_process(Device_t device) {
+static ProcessId_t driver_manager_get_process(Device_t device) {
 	device_driver_map* mapping;
 	linked_list_node_t* node = device_list.head;
 
@@ -104,11 +96,33 @@ ProcessId_t driver_manager_get_process(Device_t device) {
 		}
 	}
 
-	return start_driver(device);
+	return driver_manager_start_driver(device);
 }
 
-void main(void) {
+static message_t msg;
+
+int main(int argc, char* argv[]) {
 	driver_manager_init();
-}
+	ProcessId_t source_pid;
 
-/* TODO: driver manager as own process */
+	while (1) {
+		unsigned int ipc = ipc_syscall(PROCESS_ANY, IPC_RECEIVE, &msg);
+		if (ipc == IPC_OK) {
+			source_pid = msg.source;
+			int return_value = MESSAGE_UNKNOWN;
+
+			switch (msg.value.data[0]) {
+			case DRIVER_MANAGER_ADD:
+				driver_manager_add_driver(msg.value.data[1], (void*)msg.value.data[2], &msg.value.buffer[12]); /* TODO: add checks */
+				return_value = 1;
+				break;
+			case DRIVER_MANAGER_GET:
+				return_value = driver_manager_get_process(msg.value.data[1]);
+				break;
+			}
+
+			msg.value.data[0] = return_value;
+			ipc_syscall(source_pid, IPC_SEND, &msg);
+		}
+	}
+}

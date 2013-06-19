@@ -9,7 +9,7 @@
 #define OMAP3530_TIMER_H_
 
 #include "../../../service/logger/logger.h"
-#include "../../../bit.h"
+#include <bit.h>
 #include "../../generic/timer/gptimer.h"
 #include "../mpu_subsystem/intcps.h"
 #include "prcm.h"

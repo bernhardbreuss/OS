@@ -9,7 +9,7 @@
 #define OMAP3530_FS_H_
 
 #include "../../../platform/omap3530/mmchs.h"
-#include "../../../bit.h"
+#include <bit.h>
 #include "../../generic/fs/fs.h"
 
 MMCHS_t* instance;

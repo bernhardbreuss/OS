@@ -6,7 +6,7 @@
  */
 
 #include "intcps.h"
-#include "../../../bit.h"
+#include <bit.h>
 
 void intcps_active_interrupt_line(int interrupt_line_id) {
 

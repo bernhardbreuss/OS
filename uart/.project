@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>led1_user</name>
+	<name>uart</name>
 	<comment></comment>
 	<projects>
+		<project>api</project>
+		<project>util</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
@@ -29,6 +31,11 @@
 			<name>USER_PROCESS.cmd</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/USER_PROCESS.cmd</locationURI>
+		</link>
+		<link>
+			<name>user_boot.asm</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/user_boot.asm</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

@@ -13,6 +13,7 @@
 #include "../mmu/mmu.h"
 
 extern Process_t* process_manager_current_process;
+extern Process_t process_manager_kernel_process;
 
 /**
  * Initializes the processSlots array of the manager with NULL pointers.
@@ -22,15 +23,14 @@ void process_manager_init(mmu_table_t* kernel_page_table);
 
 void process_manager_start_scheduling(void);
 
-ProcessId_t process_manager_start_process_byfunc(process_func_t func, char* name, ProcessPriority_t priority, unsigned int virtual_address, unsigned int physical_address, unsigned int size);
-ProcessId_t process_manager_start_process_bybinary(binary_t* binary, char* name, ProcessPriority_t priority);
+Process_t* process_manager_start_process_byfunc(process_func_t func, char* name, ProcessPriority_t priority, unsigned int virtual_address, unsigned int physical_address, unsigned int size);
+Process_t* process_manager_start_process_bybinary(binary_t* binary, ProcessPriority_t priority, char* argv);
 
 void process_manager_change_process(Process_t* process);
 
-ProcessId_t process_manager_get_process(process_name_t processName);
-
 uint32_t process_manager_start_managing(ProcessId_t processId);
 
+Process_t* process_manager_get_process_byname(process_name_t processName);
 Process_t* process_manager_get_process_byid(ProcessId_t id);
 
 void process_manager_set_process_ready(Process_t* process);

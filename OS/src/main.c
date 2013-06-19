@@ -9,20 +9,20 @@
 #include "kernel/process/process.h"
 #include "kernel/process/process_manager.h"
 #include "hal/generic/uart/uart.h"
-#include "../driver_manager/driver_manager.h"
+#include <driver_manager.h>
 #include <ipc.h>
 #include "tests/pwm_test.h"
 #include "tests/ring_buffer_test.h"
-#include "kernel/kernel.h"
+#include "kernel/system.h"
 #include "kernel/loader/binary.h"
-#include "kernel/loader/elf.h"
+#include "kernel/loader/osx.h"
 #include "kernel/loader/loader.h"
 #include "kernel/mmu/mmu.h"
 #include "kernel/mmu/ram_manager.h"
 #include "service/serial_service.h"
 #include "binary.h"
 #include "hal/generic/irq/irq.h"
-#include "kernel/kernel.h"
+#include <string.h>
 
 #pragma INTERRUPT(udef_handler, UDEF);
 interrupt void udef_handler() {
@@ -32,32 +32,10 @@ interrupt void udef_handler() {
 
 gptimer_t main_timer;
 
-#define LED0_PIN			(1 << 21)
-#define LED1_PIN			(1 << 22)
 #define GPIO5_OUT			(unsigned int*) 0x4905603C
 #define GPIO_ON		0x1
 #define GPIO_TOGGLE	0x2
 #define GPIO_OFF	0x3
-
-Process_t process1, process2, process3;
-
-uint32_t led0(void) {
-	int i;
-	logger_debug("Led 0");
-	while (1) {
-		for(i = 0; i < 450000; i++) ;
-		*(GPIO5_OUT) ^= LED0_PIN;
-	}
-}
-
-uint32_t led1(void) {
-	int i;
-	logger_debug("Led 1");
-	while (1) {
-		for(i = 0; i < 900000; i++);
-		*(GPIO5_OUT) ^= LED1_PIN;
-	}
-}
 
 void turnoff_rgb(void) {
 	/* set mode to 4 (GPIO) see p. ~787 of omap35x.pdf */
@@ -76,32 +54,15 @@ void turnoff_rgb(void) {
 	*(GPIO5_DATAOUT) &= ~rgb;
 }
 
-void do_pwm(void);
-
-uint32_t ipc_process1(void) {
-	//GPIO led 0 toggle via IPC
-	message_t msg;
-	msg.type = MESSAGE_TYPE_DATA;
-	msg.value.data[0] = DEVICE_OPEN;
-	//led0 is accessible over the twenty-first pin on GPIO5
-	//omap3530x.pdf page 3383
-	//BBSRM_latest.pdf page 64
-	msg.value.data[1] = 21;
-	msg.value.data[2] = GPIO_TOGGLE;
-	msg.size = 3;
-
-	int i;
-	while (1) {
-		ipc_syscall_device(GPIO5, IPC_SENDREC, &msg); /* send device GPIO5 something */
-		msg.value.data[0] = DEVICE_WRITE; //device opened already, we want to write data
-		for (i = 0; i < 450000; i++) ;
-	}
-}
 
 uart_t uart3;
 
-static binary_t* binaries[1];
-static char BINARY_led1_user[] = BINARY_led1_user_out;
+static binary_t* binaries[5];
+static char BINARY_led0_user[] = BINARY_led0_user_out;
+static char BINARY_driver_manager[] = BINARY_driver_manager_out;
+static char BINARY_gpio[] = BINARY_gpio_out;
+static char BINARY_uart[] = BINARY_uart_out;
+static char BINARY_uart2_user[] = BINARY_uart2_user_out;
 uint32_t mem_elf_read(void* ident, void* dst, uint32_t offset, size_t length) {
 	if (length == 0) {
 		return 0;
@@ -117,13 +78,8 @@ void uart3_irq_handler(void) {
 	logger_debug("UART3 - Received a character: %c", received_char);
 }
 
-
-extern Driver_t gpio_driver;
-ProcessId_t gpio_start_driver_process(Device_t device);
+#include <std_adapter.h>
 void main(void) {
-	ram_manager_init();
-	mmu_table_t* page_table = mmu_init();
-
 	/* logger_init() */
 	uart_get(3, &uart3);
 	uart_protocol_format_t protocol;
@@ -132,33 +88,52 @@ void main(void) {
 	protocol.datalen = 0x3;		//length 8
 	protocol.use_parity = 0x0;
 	uart_init(&uart3, 0x00, protocol);
+	irq_add_handler(UART3_INTCPS_MAPPING_ID, &uart3_irq_handler);
 
 	logger_debug("\r\n\r\nSystem initialize ...");
 	logger_logmode();
 
+	ram_manager_init();
+	mmu_table_t* page_table = mmu_init();
+
 	/* init led stuff */
 	turnoff_rgb();
 
-	binaries[0] = elf_init(&BINARY_led1_user, &mem_elf_read);
-
 	process_manager_init(page_table);
 
-	/*driver_manager_init();
-	driver_manager_add_driver(GPIO5, &gpio_driver, &gpio_start_driver_process);*/
+	binaries[0] = osx_init(&BINARY_driver_manager, &mem_elf_read);
+	Process_t* driver_manager = process_manager_start_process_bybinary(binaries[0], PROCESS_PRIORITY_HIGH, PROCESS_DRIVER_MANAGER_NAME);
 
+	/* add drivers to the driver manager */
+	binaries[1] = osx_init(&BINARY_gpio, &mem_elf_read);
+	message_t msg;
+	msg.value.data[0] = DRIVER_MANAGER_ADD;
+	msg.value.data[1] = GPIO5;
+	msg.value.data[2] = (unsigned int)(binaries[1]);
+	process_name_t name = "GPIO";
+	strncpy(&(msg.value.buffer[12]), name, PROCESS_MAX_NAME_LENGTH);
+	ipc_syscall(driver_manager->pid, IPC_SENDREC, &msg); /* TODO: check return value */
 
-	process1.name = "LED 0 (IPC, fast)";
-	//process_manager_add_process(&process1);
+	/* add drivers to the driver manager */
+	binaries[4] = osx_init(&BINARY_uart, &mem_elf_read);
+	msg.value.data[0] = DRIVER_MANAGER_ADD;
+	msg.value.data[1] = UART2;
+	msg.value.data[2] = (unsigned int)(binaries[4]);
+	name = "UART2";
+	memcpy(&(msg.value.buffer[12]), name, PROCESS_MAX_NAME_LENGTH);
+	ipc_syscall(driver_manager->pid, IPC_SENDREC, &msg); /* TODO: check return value */
 
-	/*process2.func = &led1_user;
-	process2.name = "LED 1 (slow)";
-	process_manager_add_process(&process2);
-	process_manager_start_process_byfunc(&led1_user, "LED1 User (slow)", PROCESS_PRIORITY_HIGH, (unsigned int)&led1_user_virtual, (unsigned int)&led1_user_physical, (unsigned int)&led1_user_size);*/
-	process_manager_start_process_bybinary(binaries[0], "LED1 User (slow)", PROCESS_PRIORITY_HIGH);
+	binaries[2] = osx_init(&BINARY_led0_user, &mem_elf_read);
+	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(fast) 21 450000");
+	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(slow) 22 900000");
 
-	irq_add_handler(UART3_INTCPS_MAPPING_ID, &uart3_irq_handler);
+//	binaries[3] = osx_init(&BINARY_led1_user, &mem_elf_read);
+//	process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, 1, "LED1 User (slow)");
 
-	logger_debug("Kernel started ...");
+//	binaries[5] = osx_init(&BINARY_uart2_user, &mem_elf_read);
+//	process_manager_start_process_bybinary(binaries[5], "UART2 User", PROCESS_PRIORITY_HIGH);
 
-	kernel_main_loop();
+	logger_debug("System started ...");
+
+	system_main_loop();
 }

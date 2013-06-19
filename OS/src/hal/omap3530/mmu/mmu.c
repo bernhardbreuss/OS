@@ -16,6 +16,7 @@
 #include "../../../kernel/loader/loader.h"
 #include "../../../kernel/process/process.h"
 #include "../../../kernel/process/process_manager.h"
+#include "../../generic/process_context/process_context.h"
 
 static mmu_table_t* kernel_master_table;
 
@@ -136,7 +137,7 @@ static mmu_table_t _mmu_get_second_level_table(mmu_table_t* table, void* virtual
 		*(first_level_descriptor) = pte;
 	} else {
 		/* second level page table already exists */
-		second_table.address = (void*) ((unsigned int)first_level_descriptor & MMU_PAGE_TABLE_MASK);
+		second_table.address = (void*) (*(first_level_descriptor) & MMU_PAGE_TABLE_MASK);
 	}
 
 	return second_table;
@@ -186,32 +187,39 @@ size_t mmu_map(mmu_table_t* table, void* virtual_address, void* physical_address
 	}
 }
 
-static uint8_t _mmu_load_section(mmu_table_t* table, void* virtual_address) {
-	virtual_address = (void*)(((unsigned int)virtual_address) & MMU_SECTION_MASK);
-
-	void* physical_address = ram_manager_reserve_aligned(MMU_SECTION_SIZE, MMU_SECTION_ALIGNMENT);
-	if (physical_address == NULL) {
+static uint8_t _mmu_load(mmu_table_t* table, void* virtual_address) {
+	void* physical_address;
+	size_t size = mmu_reserve(table, &virtual_address, &physical_address);
+	if (size == 0) {
 		return 0;
 	}
 
-	_mmu_map_section(table, virtual_address, physical_address);
-	loader_addload(virtual_address, physical_address, MMU_SECTION_SIZE);
+	loader_addload(virtual_address, physical_address, size);
 
 	return 1;
 }
 
-static uint8_t _mmu_load_small_page(mmu_table_t* table, void* virtual_address) {
-	virtual_address = (void*)(((unsigned int)virtual_address) & MMU_SMALL_PAGE_MASK);
+size_t mmu_reserve(mmu_table_t* table, void** virtual_address, void** physical_address) {
+	size_t size;
+	unsigned int align;
 
-	void* physical_address = ram_manager_reserve_aligned(MMU_SMALL_PAGE_SIZE, MMU_SMALL_PAGE_ALIGNMENT);
-	if (physical_address == NULL || !_mmu_map_small_page(table, virtual_address, physical_address)) {
+	if (table->kernel_table) {
+		size = MMU_SECTION_SIZE;
+		align = MMU_SECTION_ALIGNMENT;
+		*(virtual_address) = (void*)(((unsigned int)*(virtual_address)) & MMU_SECTION_MASK);
+	} else {
+		size = MMU_SMALL_PAGE_SIZE;
+		align = MMU_SMALL_PAGE_ALIGNMENT;
+		*(virtual_address) = (void*)(((unsigned int)*(virtual_address)) & MMU_SMALL_PAGE_MASK);
+	}
+
+	*(physical_address) = ram_manager_reserve_aligned(size, align);
+	if (physical_address == NULL || !mmu_map(table, *(virtual_address), *(physical_address))) {
 		/* TODO: free reserved ram */
 		return 0;
 	}
 
-	loader_addload(virtual_address, physical_address, MMU_SMALL_PAGE_SIZE);
-
-	return 1;
+	return size;
 }
 
 void mmu_activate_process(Process_t* process) {
@@ -231,7 +239,26 @@ void mmu_activate_process(Process_t* process) {
 	mmu_ttbr_set0(ttbr, contextidr);
 }
 
-static void _mmu_handle_abort(unsigned int status, void* virtual_address) {
+void* mmu_get_physical_address(mmu_table_t* table, void* virtual_address) {
+	unsigned int* first_level_descriptor = _mmu_get_first_level_descriptor_address(table, virtual_address);
+	if (table->kernel_table) {
+		return (void*)(((*first_level_descriptor) & MMU_SECTION_MASK) | ((unsigned int)virtual_address & ~MMU_SECTION_MASK));
+	} else {
+		if ((*(first_level_descriptor) & MMU_PAGE_TABLE_DESCRIPTOR) != MMU_PAGE_TABLE_DESCRIPTOR) {
+			return NULL;
+		}
+
+		mmu_table_t second_table = _mmu_get_second_level_table(table, virtual_address);
+		if (second_table.address == NULL) {
+			return NULL;
+		}
+
+		unsigned int* second_level_descriptor = _mmu_get_second_level_descriptor_address(&second_table, virtual_address);
+		return (void*)(((*second_level_descriptor) & MMU_SMALL_PAGE_MASK) | ((unsigned int)virtual_address & ~MMU_SMALL_PAGE_MASK));
+	}
+}
+
+void _mmu_handle_abort(unsigned int status, void* virtual_address) {
 	status &=  MMU_ABORT_MASK;
 
 	if (status == MMU_ABORT_DEBUG) {
@@ -239,7 +266,7 @@ static void _mmu_handle_abort(unsigned int status, void* virtual_address) {
 		return;
 	} else {
 		mmu_table_t* table;
-		if ((unsigned int)virtual_address < 0x80000000U) {
+		if ((unsigned int)virtual_address < 0x40000000U) {
 			table = process_manager_current_process->page_table;
 		} else {
 			/* TODO: check if SPSR says that the abort wasn't in user mode */
@@ -249,12 +276,12 @@ static void _mmu_handle_abort(unsigned int status, void* virtual_address) {
 			switch (status) {
 			case MMU_ABORT_TRANSLATION_FAULT_SECTION:
 				if (table->kernel_table) {
-					_mmu_load_section(table, virtual_address); /* TODO: handle to less memory */
+					_mmu_load(table, virtual_address); /* TODO: handle to less memory */
 					logger_debug("section for address 0x%08X loaded for process %s", virtual_address, process_manager_current_process->name);
 					return;
 				}
 			case MMU_ABORT_TRANSLATION_FAULT_PAGE: /* when a user process has a fault for a section, it's a hidden fault for a page because the mmu can't know it should be a page fault */
-				_mmu_load_small_page(table, virtual_address); /* TODO: else handle to less memory */
+				_mmu_load(table, virtual_address); /* TODO: else handle to less memory */
 				logger_debug("page for address 0x%08X loaded for process %s", virtual_address, process_manager_current_process->name);
 				return;
 			}
@@ -265,24 +292,4 @@ static void _mmu_handle_abort(unsigned int status, void* virtual_address) {
 	_enable_interrupts();
 	while (1) ;
 	/* TODO: kill process */
-}
-
-#pragma INTERRUPT(pabt_handler, PABT);
-interrupt void pabt_handler() {
-	logger_warn("KERNEL INFO: Prefetch abort.");
-
-	unsigned int ifsr = mmu_get_ifsr();
-	void* ifar = mmu_get_ifar();
-
-	_mmu_handle_abort(ifsr, ifar);
-}
-
-#pragma INTERRUPT(dabt_handler, DABT);
-interrupt void dabt_handler() {
-	logger_warn("KERNEL INFO: data abort");
-
-	unsigned int dfsr = mmu_get_dfsr();
-	void* dfar = mmu_get_dfar();
-
-	_mmu_handle_abort(dfsr, dfar);
 }

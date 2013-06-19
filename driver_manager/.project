@@ -3,6 +3,8 @@
 	<name>driver_manager</name>
 	<comment></comment>
 	<projects>
+		<project>util</project>
+		<project>api</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
@@ -29,6 +31,11 @@
 			<name>USER_PROCESS.cmd</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/USER_PROCESS.cmd</locationURI>
+		</link>
+		<link>
+			<name>user_boot.asm</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/user_boot.asm</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

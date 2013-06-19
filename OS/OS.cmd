@@ -16,6 +16,7 @@ MEMORY
    DDR_USER:			ORIGIN = 0x80E00000  LENGTH = 0x03200000 // 50MB RAM for user processes (physical)
 
    VIRTUAL_PROCESSES:	ORIGIN = 0x00E00000  LENGTH = 0x03200000 // 50MB RAM for user processes (virtual)
+   ARGUMENTS:			ORIGIN = 0x3FFFF000  LENGTH = 0x00001000
 }
 
 stackSize = 0x20000;
@@ -56,6 +57,12 @@ SECTIONS
        stackAbort = .;
        . = . + (4 * stackSize);
        stackSystem = .;
+   }
+
+   .arguments  > ARGUMENTS {
+		ARGS_ADDR = .;
+		. += 500; // arguments max length
+   		ARGV_ADDR = .;
    }
 
 }
