@@ -12,6 +12,8 @@
 #include "../../../bit.h"
 #include "../../generic/fs/fs.h"
 
+MMCHS_t* instance;
+
 /* - ------------------------ -
  * - 	Power Management	  -
  * - ------------------------ -
@@ -42,6 +44,8 @@
 #define MMCHS1_BASE 	((unsigned int*) 0x4809C000)	// instance one
 #define MMCHS2_BASE 	((unsigned int*) 0x480B4000)	// instance two
 #define MMCHS3_BASE 	((unsigned int*) 0x480AD000)	// instance three
+
+#define MMCHS_REF_CLK (96000000)
 
 #define MMCHS_SYSCONFIG_OFFSET	(0x010 / 4)
 #define MMCHS_SYSSTATUS_OFFSET	(0x014 / 4)
@@ -438,11 +442,6 @@ typedef struct {
 #define MMCHS_IE_BADA_ENABLE			BIT29
 
 
-// instances of the data buffer (see OMAP35x.pdf, page 3207)
-typedef struct _MMCHS_DATA {
-	unsigned int* MMCHS_instance;	// = MMCHSx_BASE + MMCHS_DATA_OFFSET;
-} MMCHS_DATA_t;
-
 #define MMCHS_BLEN_TRANSFER_NO			0x0
 #define MMCHS_BLEN_TRANSFER_1_BYTE		0x1
 #define MMCHS_BLEN_TRANSFER_2_BYTES		0x2
@@ -451,11 +450,5 @@ typedef struct _MMCHS_DATA {
 #define MMCHS_BLEN_TRANSFER_512_BYTES	0x200
 #define MMCHS_BLEN_TRANSFER_1023_BYTES	0x3FF
 #define MMCHS_BLEN_TRANSFER_1024_BYTES	0x400
-
-// (see OMAP35x.pdf, page 3200)
-typedef struct _MMCHS_BLK {
-	unsigned int* MMCHS_instance;	// = MMCHSx_BASE + MMCHS_BLK_OFFSET;
-	int data_transfer;				// = MMCHS_BLEN_TRANSFER_x
-} MMCHS_BLK_t;
 
 #endif /* FS_H_ */

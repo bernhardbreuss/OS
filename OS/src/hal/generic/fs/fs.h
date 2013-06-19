@@ -17,6 +17,9 @@
 #define ERROR	0
 typedef int RESPONSE_t;
 
+#define TRUE 1
+#define FALSE 0
+
 //typedef struct _FileHandle {
 //
 //} FileHandle_t;
@@ -24,11 +27,12 @@ typedef int RESPONSE_t;
 /**
  * Initialise file system
  */
-RESPONSE_t fs_init(MMCHS_t* instance);
 
-RESPONSE_t fs_read(MMCHS_t* instance);
+RESPONSE_t fs_init();
 
-RESPONSE_t fs_write(MMCHS_t* instance);
+int fs_read(uint32 sector, uint8 *buffer, uint32 sector_count);
+
+int fs_write(uint32 sector, uint8 *buffer, uint32 sector_count);
 
 /*
 int media_init() {
