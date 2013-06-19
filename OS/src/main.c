@@ -57,11 +57,12 @@ void turnoff_rgb(void) {
 
 uart_t uart3;
 
-static binary_t* binaries[4];
+static binary_t* binaries[5];
 static char BINARY_led0_user[] = BINARY_led0_user_out;
-static char BINARY_led1_user[] = BINARY_led1_user_out;
 static char BINARY_driver_manager[] = BINARY_driver_manager_out;
 static char BINARY_gpio[] = BINARY_gpio_out;
+static char BINARY_uart[] = BINARY_uart_out;
+static char BINARY_uart2_user[] = BINARY_uart2_user_out;
 uint32_t mem_elf_read(void* ident, void* dst, uint32_t offset, size_t length) {
 	if (length == 0) {
 		return 0;
@@ -101,7 +102,7 @@ void main(void) {
 	process_manager_init(page_table);
 
 	binaries[0] = osx_init(&BINARY_driver_manager, &mem_elf_read);
-	Process_t* driver_manager = process_manager_start_process_bybinary(binaries[0], PROCESS_PRIORITY_HIGH, 1, PROCESS_DRIVER_MANAGER_NAME);
+	Process_t* driver_manager = process_manager_start_process_bybinary(binaries[0], PROCESS_PRIORITY_HIGH, PROCESS_DRIVER_MANAGER_NAME);
 
 	/* add drivers to the driver manager */
 	binaries[1] = osx_init(&BINARY_gpio, &mem_elf_read);
@@ -113,11 +114,24 @@ void main(void) {
 	strncpy(&(msg.value.buffer[12]), name, PROCESS_MAX_NAME_LENGTH);
 	ipc_syscall(driver_manager->pid, IPC_SENDREC, &msg); /* TODO: check return value */
 
+	/* add drivers to the driver manager */
+	binaries[4] = osx_init(&BINARY_uart, &mem_elf_read);
+	msg.value.data[0] = DRIVER_MANAGER_ADD;
+	msg.value.data[1] = UART2;
+	msg.value.data[2] = (unsigned int)(binaries[4]);
+	name = "UART2";
+	memcpy(&(msg.value.buffer[12]), name, PROCESS_MAX_NAME_LENGTH);
+	ipc_syscall(driver_manager->pid, IPC_SENDREC, &msg); /* TODO: check return value */
+
 	binaries[2] = osx_init(&BINARY_led0_user, &mem_elf_read);
-	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, 1, "LED0 User (fast)");
+	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(fast) 21 450000");
+	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(slow) 22 900000");
 
 //	binaries[3] = osx_init(&BINARY_led1_user, &mem_elf_read);
 //	process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, 1, "LED1 User (slow)");
+
+//	binaries[5] = osx_init(&BINARY_uart2_user, &mem_elf_read);
+//	process_manager_start_process_bybinary(binaries[5], "UART2 User", PROCESS_PRIORITY_HIGH);
 
 	logger_debug("System started ...");
 

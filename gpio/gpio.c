@@ -13,7 +13,7 @@
 #include <driver.h>
 
 static void* gpio_open(driver_msg_t* buf, size_t size, driver_mode_t mode) {
-	if (size < 4) {
+	if (size < sizeof(unsigned int)) {
 		return NULL;
 	}
 	unsigned int values[1];

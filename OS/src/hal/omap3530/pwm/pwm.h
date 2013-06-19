@@ -12,7 +12,7 @@
 #include "../../generic/pwm/pwm.h"
 #include "../../generic/timer/gptimer.h"
 #include "../../../service/logger/logger.h"
-#include "../../../bit.h"
+#include <bit.h>
 
 /* ************************* *
  * 			PWM

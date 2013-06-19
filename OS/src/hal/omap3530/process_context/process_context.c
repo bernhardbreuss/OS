@@ -34,7 +34,3 @@ void process_context_init_bybinary(Process_t* process, binary_t* binary) {
 	process->saved_context[0] = binary->entry_point;
 	_process_context_init(process, 0);
 }
-
-void process_context_set_argc(Process_t* process, int argc) {
-	process->saved_context[1] = (void*)argc;
-}

@@ -13,7 +13,7 @@
 static message_t msg;
 
 static unsigned int system_start_process(void) {
-	Process_t* p = process_manager_start_process_bybinary((binary_t*)msg.value.data[1], PROCESS_PRIORITY_HIGH, msg.value.buffer[sizeof(unsigned int) * 3], &msg.value.buffer[sizeof(unsigned int) * 4]);
+	Process_t* p = process_manager_start_process_bybinary((binary_t*)msg.value.data[1], PROCESS_PRIORITY_HIGH, &msg.value.buffer[sizeof(unsigned int) * 3]);
 	if (p != NULL) {
 		msg.value.data[1] = p->pid;
 	} else {

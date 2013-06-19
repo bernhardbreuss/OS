@@ -21,6 +21,10 @@ c_stack         .long    __stack
 c_STACK_SIZE    .long    __STACK_SIZE
 
 	.global std_adapter_adapt
+	.global main
+	.global argument_helper_parse
+	.global ARGV_ADDR
+_argv_addr		.long	ARGV_ADDR
 
 ;***************************************************************
 ;* FUNCTION DEF: _c_int00
@@ -38,7 +42,10 @@ _c_int00: .asmfunc
 
     BL std_adapter_adapt
 
+	BL argument_helper_parse
+	LDR R1, _argv_addr
+
     ; CALL APPLICATION
-    BL    ARGS_MAIN_RTN
+    BL    main
 
 .end

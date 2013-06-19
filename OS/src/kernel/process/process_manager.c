@@ -18,6 +18,7 @@
 #include <ipc.h>
 #include "../../idle_process.h"
 #include "../loader/loader.h"
+#include <argument_helper.h>
 
 static gptimer_t _schedule_timer;
 
@@ -37,12 +38,10 @@ extern void* idle_process_virtual;
 extern void* idle_process_physical;
 extern void* idle_process_size;
 
-static void* argv_address = 0x0; /* TODO: ... */
-
-static Process_t* _process_manager_start_process(Process_t* process, mmu_table_t* page_table, ProcessPriority_t priority, int argc, char* argv) {
+static Process_t* _process_manager_start_process(Process_t* process, mmu_table_t* page_table, ProcessPriority_t priority, char* args, uint8_t load_args) {
 	/* copy first argument into kernel for use as pcb */
 	process->name = malloc(PROCESS_MAX_NAME_LENGTH);
-	strncpy(process->name, argv, PROCESS_MAX_NAME_LENGTH);
+	strncpy(process->name, args, PROCESS_MAX_NAME_LENGTH);
 	process->name[PROCESS_MAX_NAME_LENGTH - 1] = '\0';
 
 	process->ipc.call_type = IPC_NOOP;
@@ -51,10 +50,12 @@ static Process_t* _process_manager_start_process(Process_t* process, mmu_table_t
 	process->priority = priority;
 	process->state = PROCESS_READY;
 
-	void* argv_physical;
-	mmu_reserve(page_table, &argv_address, &argv_physical);
-
-	process_context_set_argc(process, argc);
+	if (load_args) {
+		void* args_address = &ARGS_ADDR;
+		void* args_physical;
+		mmu_reserve(page_table, &args_address, &args_physical);
+		strncpy(args_physical, args, ARGUMENTS_MAX_LENGTH);
+	}
 
 	process->pid = nextProcessId++;
 	linked_list_add(&processes, process);
@@ -73,7 +74,7 @@ void process_manager_init(mmu_table_t* kernel_page_table) {
 
 	nextProcessId = PROCESS_KERNEL;
 	process_manager_kernel_process.binary = NULL;
-	_process_manager_start_process(&process_manager_kernel_process, kernel_page_table, PROCESS_PRIORITY_HIGH, 1, "System");
+	_process_manager_start_process(&process_manager_kernel_process, kernel_page_table, PROCESS_PRIORITY_HIGH, "System", 0);
 	process_manager_kernel_process.state = PROCESS_RUNNING;
 	process_manager_current_process = &process_manager_kernel_process;
 	process_context_pointer = process_manager_kernel_process.saved_context;
@@ -84,7 +85,7 @@ void process_manager_init(mmu_table_t* kernel_page_table) {
 	static Process_t loader;
 	loader.binary = NULL;
 	process_context_init_byfunc(&loader, &loader_main, 1);
-	_process_manager_start_process(&loader, kernel_page_table, PROCESS_PRIORITY_HIGH, 1, "Loader");
+	_process_manager_start_process(&loader, kernel_page_table, PROCESS_PRIORITY_HIGH, "Loader", 0);
 	process_manager_run_process(&loader); /* give the loader process the possibility to initialize before another process could be started */
 
 	/* start idle process */
@@ -122,10 +123,10 @@ Process_t* process_manager_start_process_byfunc(process_func_t func, process_nam
 
 	process->binary = NULL;
 	process_context_init_byfunc(process, func, 0);
-	return _process_manager_start_process(process, page_table, priority, 1, name);
+	return _process_manager_start_process(process, page_table, priority, name, 1);
 }
 
-Process_t* process_manager_start_process_bybinary(binary_t* binary, ProcessPriority_t priority, int argc, char* argv) {
+Process_t* process_manager_start_process_bybinary(binary_t* binary, ProcessPriority_t priority, char* argv) {
 	Process_t* process = malloc(sizeof(Process_t));
 	if (process == NULL) {
 		return NULL;
@@ -138,7 +139,7 @@ Process_t* process_manager_start_process_bybinary(binary_t* binary, ProcessPrior
 
 	process->binary = binary;
 	process_context_init_bybinary(process, binary);
-	return _process_manager_start_process(process, page_table, priority, argc, argv);
+	return _process_manager_start_process(process, page_table, priority, argv, 1);
 }
 
 void process_manager_change_process(Process_t* process) {

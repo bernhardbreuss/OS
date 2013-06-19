@@ -13,11 +13,12 @@
 #include <ipc.h>
 #include <system.h>
 #include <process.h>
+#include <argument_helper.h>
 
 typedef struct {
 	Device_t device;
 	void* driver_binary;
-	process_name_t name;
+	char command_line[ARGUMENTS_MAX_LENGTH];
 	ProcessId_t process_id;
 } device_driver_map;
 
@@ -31,7 +32,7 @@ static void driver_manager_init(void) {
 	linked_list_init(&drivers);
 }
 
-static void driver_manager_add_driver(Device_t device, void* driver_binary, process_name_t name) {
+static void driver_manager_add_driver(Device_t device, void* driver_binary, char* command_line) {
 	device_driver_map* mapping = malloc(sizeof(device_driver_map));
 
 	if (mapping == NULL) {
@@ -41,7 +42,7 @@ static void driver_manager_add_driver(Device_t device, void* driver_binary, proc
 
 	mapping->device = device;
 	mapping->driver_binary = driver_binary;
-	mapping->name = name;
+	strncpy(mapping->command_line, command_line, sizeof(mapping->command_line));
 
 	linked_list_add(&drivers, mapping); /* TODO: check for too less memory */
 }
@@ -69,9 +70,8 @@ static ProcessId_t driver_manager_start_driver(Device_t device) {
 
 	msg.value.data[0] = SYSTEM_START_PROCESS;
 	msg.value.data[1] = (unsigned int)mapping->driver_binary;
-	msg.value.data[2] = PROCESS_INVALID_ID;
-	msg.value.data[3] = 1;
-	strncpy(&msg.value.buffer[sizeof(unsigned int) * 4], mapping->name, PROCESS_MAX_NAME_LENGTH);
+	msg.value.data[2] = (unsigned int)PROCESS_INVALID_ID;
+	strncpy(&msg.value.buffer[sizeof(unsigned int) * 3], mapping->command_line, sizeof(mapping->command_line));
 
 	unsigned int ipc = ipc_syscall(PROCESS_KERNEL, IPC_SENDREC, &msg);
 
@@ -101,9 +101,8 @@ static ProcessId_t driver_manager_get_process(Device_t device) {
 
 static message_t msg;
 
-void main(void) {
+int main(int argc, char* argv[]) {
 	driver_manager_init();
-	process_name_t name;
 	ProcessId_t source_pid;
 
 	while (1) {
@@ -114,13 +113,7 @@ void main(void) {
 
 			switch (msg.value.data[0]) {
 			case DRIVER_MANAGER_ADD:
-				name = malloc(PROCESS_MAX_NAME_LENGTH);
-				if (name != NULL) {
-					strncpy(name, &msg.value.buffer[12], PROCESS_MAX_NAME_LENGTH);
-				} else {
-					name = "/* NO NAME BECAUSE NOT ENOUGH MEMORY */";
-				}
-				driver_manager_add_driver(msg.value.data[1], (void*)msg.value.data[2], name); /* TODO: add checks */
+				driver_manager_add_driver(msg.value.data[1], (void*)msg.value.data[2], &msg.value.buffer[12]); /* TODO: add checks */
 				return_value = 1;
 				break;
 			case DRIVER_MANAGER_GET:

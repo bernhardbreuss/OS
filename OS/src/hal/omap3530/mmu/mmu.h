@@ -8,9 +8,9 @@
 #ifndef OMAP3530_MMU_H_
 #define OMAP3530_MMU_H_
 
-#include "../../../bit.h"
+#include <bit.h>
 
-#define MMU_USER_N 0x1
+#define MMU_USER_N 0x2
 
 #define MMU_FIRST_LEVEL_KERNEL_TABLE_SIZE	0x4000 /* 16KB */
 #define MMU_FIRST_LEVEL_USER_TABLE_SIZE		(MMU_FIRST_LEVEL_KERNEL_TABLE_SIZE >> MMU_USER_N)

@@ -40,6 +40,8 @@ int8_t ipc_handle_syscall(ProcessId_t o, uint8_t const call_type, message_t* msg
 	src->ipc.other = o;
 	src->ipc.msg = mmu_get_physical_address(src->page_table, msg);
 
+	logger_debug("IPC: %u src=%i:%s dst=%i:%s", call_type, src->pid, src->name, o, (dst != NULL) ? dst->name : "<ANY>");
+
 	switch (call_type) {
 		case IPC_SEND:
 		case IPC_SENDREC: /* SEND is falling through here */
