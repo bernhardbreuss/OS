@@ -65,13 +65,6 @@ mmu_table_t* mmu_init_process(uint8_t kernel) {
 		return NULL;
 	}
 
-	/* ensure that new page table is mapped in the kernel page table by 1:1 mapping */
-	if (!mmu_map(kernel_master_table, table->address, table->address)) {
-		/* TODO: destroy new page table */
-		free(table);
-		return NULL;
-	}
-
 	table->page_size = MMU_SECTION;
 	table->kernel_table = kernel;
 

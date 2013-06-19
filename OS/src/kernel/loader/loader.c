@@ -115,7 +115,6 @@ int loader_main(int argc, char* argv[]) {
 			_enable_interrupts();
 
 			loader_load_t* load = node->value;
-			mmu_map(process_manager_current_process->page_table, load->physical_address, load->physical_address);
 			_loader_load(load->process->binary, load->virtual_address, load->physical_address, load->length);
 
 			_disable_interrupts();

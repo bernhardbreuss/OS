@@ -5,7 +5,7 @@
  *      Author: Stephan
  */
 
-#include "ipc.h"
+#include <ipc.h>
 #include <process.h>
 #include "../process/process_manager.h"
 #include "../../hal/generic/mmu/mmu.h"
@@ -17,9 +17,13 @@ static void copy_msg(Process_t* src, Process_t* dst) {
 	memcpy(dst->ipc.msg, src->ipc.msg, sizeof(message_t));
 }
 
-int8_t ipc_handle_syscall(ProcessId_t o, uint8_t const call_type, message_t* msg) {
+int8_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 	Process_t* src = process_manager_current_process;
 	Process_t* dst = NULL;
+
+	if (call_type == IPC_RECEIVE_ASYNC && src->ipc.sender.head == NULL) {
+		return IPC_NOTHING_RECEIVED;
+	}
 
 	if (o == PROCESS_STDIN) {
 		o = src->stdin;
@@ -29,7 +33,7 @@ int8_t ipc_handle_syscall(ProcessId_t o, uint8_t const call_type, message_t* msg
 
 	if (o == PROCESS_INVALID_ID) {
 		return IPC_OTHER_NOT_FOUND;
-	} else if (call_type != IPC_RECEIVE || o != PROCESS_ANY) { /* allow ANY only on receive */
+	} else if ((call_type & IPC_RECEIVE) != IPC_RECEIVE || o != PROCESS_ANY) { /* allow ANY only on receive */
 		dst = process_manager_get_process_byid(o);
 
 		if (dst == NULL) {
@@ -78,6 +82,7 @@ int8_t ipc_handle_syscall(ProcessId_t o, uint8_t const call_type, message_t* msg
 			}
 
 		case IPC_RECEIVE: /* SENDREC and SEND are falling through here */
+		case IPC_RECEIVE_ASYNC:
 			_disable_interrupts(); /* TODO: check that process is not dead */
 			if (dst != NULL) {
 				if (dst->state == PROCESS_ZOMBIE) {

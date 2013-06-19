@@ -83,31 +83,33 @@ static uint8_t mem_io_write(void){
 
 void system_main_loop(void) {
 	while (1) {
-		ipc_syscall(PROCESS_ANY, IPC_RECEIVE, &msg);
-		uint8_t answer = 0;
+		int ipc = ipc_syscall(PROCESS_ANY, IPC_RECEIVE, &msg);
+		if (ipc == IPC_OK) {
+			uint8_t answer = 0;
 
-		switch (msg.value.data[0]) {
-		case SYSTEM_START_PROCESS:
-			answer = system_start_process();
-			break;
-		case SYSTEM_FIND_PROCESS:
-			answer = system_find_process();
-			break;
-		case MEM_IO_READ:
-			answer = mem_io_read();
-			break;
-		case MEM_IO_WRITE:
-			answer = mem_io_write();
-			break;
-		case SYSTEM_END_PROCESS:
-			answer = system_end_process();
-		default:
-			answer = 1;
-			msg.value.data[0] = SYSTEM_ERROR;
-		}
+			switch (msg.value.data[0]) {
+			case SYSTEM_START_PROCESS:
+				answer = system_start_process();
+				break;
+			case SYSTEM_FIND_PROCESS:
+				answer = system_find_process();
+				break;
+			case MEM_IO_READ:
+				answer = mem_io_read();
+				break;
+			case MEM_IO_WRITE:
+				answer = mem_io_write();
+				break;
+			case SYSTEM_END_PROCESS:
+				answer = system_end_process();
+			default:
+				answer = 1;
+				msg.value.data[0] = SYSTEM_ERROR;
+			}
 
-		if (answer) {
-			ipc_syscall(msg.source, IPC_SEND, &msg);
+			if (answer) {
+				ipc_syscall(msg.source, IPC_SEND, &msg);
+			}
 		}
 	}
 }

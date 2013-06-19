@@ -39,7 +39,6 @@ extern void* idle_process_physical;
 extern void* idle_process_size;
 
 static Process_t* _process_manager_start_process(Process_t* process, mmu_table_t* page_table, ProcessPriority_t priority, char* args, uint8_t load_args) {
-	/* copy first argument into kernel for use as pcb */
 	process->name = malloc(PROCESS_MAX_NAME_LENGTH);
 	strncpy(process->name, args, PROCESS_MAX_NAME_LENGTH);
 	process->name[PROCESS_MAX_NAME_LENGTH - 1] = '\0';
@@ -60,6 +59,7 @@ static Process_t* _process_manager_start_process(Process_t* process, mmu_table_t
 	process->pid = nextProcessId++;
 	linked_list_add(&processes, process);
 	linked_list_add(&ready_processes[priority], process);
+	process->in_ready_list = 1;
 
 	return process;
 }
@@ -123,7 +123,7 @@ Process_t* process_manager_start_process_byfunc(process_func_t func, process_nam
 
 	process->binary = NULL;
 	process_context_init_byfunc(process, func, 0);
-	return _process_manager_start_process(process, page_table, priority, name, 1);
+	return _process_manager_start_process(process, page_table, priority, name, 0);
 }
 
 Process_t* process_manager_start_process_bybinary(binary_t* binary, ProcessPriority_t priority, char* argv) {
@@ -203,13 +203,18 @@ Process_t* _process_manager_scheduler_get_next_process(void) {
 	int i;
 	for (i = 0; i < PROCESS_PRIORITY_COUNT; i++) {
 		/* pop the first ready process out of the queue */
-		linked_list_node_t* node = linked_list_pop_head(&ready_processes[i]);
-		if (node != NULL) {
-			Process_t* p = node->value;
-			if (p->state == PROCESS_READY || p->state == PROCESS_RUNNING) {
-				/* insert process at the end of the queue */
-				linked_list_add_node(&ready_processes[i], node);
-				return node->value;
+		while (ready_processes[i].head != NULL) {
+			linked_list_node_t* node = linked_list_pop_head(&ready_processes[i]);
+			if (node != NULL) {
+				Process_t* p = node->value;
+				if (p->state == PROCESS_READY || p->state == PROCESS_RUNNING) {
+					/* insert process at the end of the queue */
+					linked_list_add_node(&ready_processes[i], node);
+					return node->value;
+				} else {
+					p->in_ready_list = 0;
+					free(node);
+				}
 			}
 		}
 	}
@@ -224,16 +229,8 @@ void process_manager_end_process(ProcessId_t pid, int exit_code) {
 	}
 
 	p->state = PROCESS_ZOMBIE;
-	linked_list_node_t* node = ready_processes[p->priority].head;
-	while (node != NULL) {
-		if (p == node->value) {
-			linked_list_remove(&ready_processes[p->priority], node);
-			break;
-		}
-		node = node->next;
-	}
 
-	node = p->ipc.sender.head;
+	linked_list_node_t* node = p->ipc.sender.head;
 	while (node != NULL) {
 		Process_t* process = node->value;
 		process_manager_set_process_ready(process);
@@ -253,7 +250,10 @@ void process_manager_set_process_ready(Process_t* process) {
 	/* logger_debug("process_manager: readying %i:%s", process->pid, process->name); */
 
 	process->state = PROCESS_READY;
-	linked_list_insert_begin(&ready_processes[process->priority], process);
+	if (process->in_ready_list == 0) {
+		linked_list_insert_begin(&ready_processes[process->priority], process);
+		process->in_ready_list = 1;
+	}
 }
 
 void process_manager_block_current_process(void) {
@@ -264,12 +264,4 @@ void process_manager_block_current_process(void) {
 	/* logger_debug("process_manager: blocking %i:%s", process_manager_current_process->pid, process_manager_current_process->name); */
 
 	process_manager_current_process->state = PROCESS_BLOCKED;
-	linked_list_node_t* node = ready_processes[process_manager_current_process->priority].head;
-	while (node != NULL) {
-		if (node->value == process_manager_current_process) {
-			linked_list_remove(&ready_processes[process_manager_current_process->priority], node);
-		}
-
-		node = node->next;
-	}
 }
