@@ -18,7 +18,8 @@
 typedef enum {
 	PROCESS_READY,
 	PROCESS_RUNNING,
-	PROCESS_BLOCKED
+	PROCESS_BLOCKED,
+	PROCESS_ZOMBIE
 } ProcessState_t;
 
 typedef enum {

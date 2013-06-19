@@ -72,7 +72,7 @@ void process_manager_init(mmu_table_t* kernel_page_table) {
 		linked_list_init(&ready_processes[i]);
 	}
 
-	nextProcessId = PROCESS_KERNEL;
+	nextProcessId = PROCESS_SYSTEM;
 	process_manager_kernel_process.binary = NULL;
 	_process_manager_start_process(&process_manager_kernel_process, kernel_page_table, PROCESS_PRIORITY_HIGH, "System", 0);
 	process_manager_kernel_process.state = PROCESS_RUNNING;
@@ -205,13 +205,44 @@ Process_t* _process_manager_scheduler_get_next_process(void) {
 		/* pop the first ready process out of the queue */
 		linked_list_node_t* node = linked_list_pop_head(&ready_processes[i]);
 		if (node != NULL) {
-			/* insert process at the end of the queue */
-			linked_list_add_node(&ready_processes[i], node);
-			return node->value;
+			Process_t* p = node->value;
+			if (p->state == PROCESS_READY || p->state == PROCESS_RUNNING) {
+				/* insert process at the end of the queue */
+				linked_list_add_node(&ready_processes[i], node);
+				return node->value;
+			}
 		}
 	}
 
 	return NULL;
+}
+
+void process_manager_end_process(ProcessId_t pid, int exit_code) {
+	Process_t* p = process_manager_get_process_byid(pid);
+	if (p == NULL) {
+		return;
+	}
+
+	p->state = PROCESS_ZOMBIE;
+	linked_list_node_t* node = ready_processes[p->priority].head;
+	while (node != NULL) {
+		if (p == node->value) {
+			linked_list_remove(&ready_processes[p->priority], node);
+			break;
+		}
+		node = node->next;
+	}
+
+	node = p->ipc.sender.head;
+	while (node != NULL) {
+		Process_t* process = node->value;
+		process_manager_set_process_ready(process);
+		node = node->next;
+	}
+	linked_list_clear(&p->ipc.sender);
+
+	/* TODO: free reserved ram (notify mmu/ram manager) */
+	/* TODO: set exit_code */
 }
 
 void process_manager_set_process_ready(Process_t* process) {

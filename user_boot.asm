@@ -9,8 +9,7 @@
 ;* TI includes
 ;***************************************************************
 
-    .asg    _args_main,   ARGS_MAIN_RTN
-    .global ARGS_MAIN_RTN
+    .global main
     .global __TI_auto_init
 
     .global __stack
@@ -21,10 +20,12 @@ c_stack         .long    __stack
 c_STACK_SIZE    .long    __STACK_SIZE
 
 	.global std_adapter_adapt
-	.global main
+	.global ARGS_MAIN_RTN
+	.asg	main,   ARGS_MAIN_RTN
 	.global argument_helper_parse
 	.global ARGV_ADDR
 _argv_addr		.long	ARGV_ADDR
+	.global _os_std_exit_process
 
 ;***************************************************************
 ;* FUNCTION DEF: _c_int00
@@ -47,5 +48,6 @@ _c_int00: .asmfunc
 
     ; CALL APPLICATION
     BL    main
+    BL _os_std_exit_process
 
 .end

@@ -16,7 +16,7 @@ ProcessId_t process_find(process_name_t name) {
 	msg.value.data[0] = SYSTEM_FIND_PROCESS;
 	strncpy(&msg.value.buffer[sizeof(unsigned int)], name, PROCESS_MAX_NAME_LENGTH);
 
-	uint32_t status = ipc_syscall(PROCESS_KERNEL, IPC_SENDREC, &msg);
+	uint32_t status = ipc_syscall(PROCESS_SYSTEM, IPC_SENDREC, &msg);
 
 	if (status != IPC_OK || msg.value.data[0] != SYSTEM_OK) {
 		return PROCESS_INVALID_ID;

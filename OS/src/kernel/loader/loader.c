@@ -32,7 +32,7 @@ static uint32_t _loader_load(binary_t* binary, void* virtual_address, void* phys
 			if ((unsigned int)section->mem_address <= ((unsigned int)virtual_address + length) && ((unsigned int)section->mem_address + section->mem_length) > (unsigned int)virtual_address) {
 				/* section found */
 				break;
-			} else if (((uint8_t*)section->mem_address + length) > (uint8_t*)virtual_address) {
+			} else if ((uint8_t*)section->mem_address > (uint8_t*)virtual_address) {
 				/* section not found */
 				node = NULL;
 			} else {

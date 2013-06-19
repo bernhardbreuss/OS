@@ -21,7 +21,8 @@
 
 #define IPC_OK				0
 #define IPC_OTHER_NOT_FOUND	-1
-#define IPC_DEADLOCK		2 /* TODO: deadlocks should be resolved by killing both processes in ipc.c */
+#define IPC_DEADLOCK		-2 /* TODO: deadlocks should be resolved by killing both processes in ipc.c */
+#define IPC_DEAD			-3
 
 int8_t ipc_syscall_device(Device_t device, uint8_t call_type, message_t* msg);
 

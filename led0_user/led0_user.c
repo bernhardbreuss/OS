@@ -10,10 +10,14 @@
 int main(int argc, char* argv[]) {
 	int pin = 21;
 	int rate = 450000;
+	int end = -1;
 
-	if (argc == 3) {
+	if (argc >= 3) {
 		pin = strtol(argv[1], NULL, 10);
 		rate = strtol(argv[2], NULL, 10);
+	}
+	if (argc == 4) {
+		end = strtol(argv[3], NULL, 10);
 	}
 	int i;
 
@@ -27,5 +31,12 @@ int main(int argc, char* argv[]) {
 		for(i = 0; i < rate; i++);
 
 		os_write(&handle, &msg, 4);
+
+		if (end != -1) {
+			end--;
+			if (end == 0) {
+				break;
+			}
+		}
 	}
 }
