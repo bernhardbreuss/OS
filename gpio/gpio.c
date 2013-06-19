@@ -16,27 +16,34 @@ static void* gpio_open(driver_msg_t* buf, size_t size, driver_mode_t mode) {
 	if (size < sizeof(unsigned int)) {
 		return NULL;
 	}
-
-	unsigned int oe = memory_mapped_read(GPIO5_OE);
+	unsigned int values[1];
+	unsigned int addresses[1];
+	values[0] = GPIO5_OE;
+	unsigned int oe = memory_mapped_read(values, 1);
 
 	switch (mode) {
 	case DRIVER_MODE_READ:
-		oe |= (1 << buf->data[0]);
+		values[0] |= (1 << buf->data[0]);
 		break;
 	case DRIVER_MODE_WRITE:
-		oe &= ~(1 << buf->data[0]);
+		values[0] &= ~(1 << buf->data[0]);
 		break;
 	default:
 		return NULL;
 	}
+	addresses[0] = GPIO5_OE;
+	memory_mapped_write(values, addresses, 1);
 
 	return (void*)buf->data[0];
 }
 
 static int gpio_read(void* handle, driver_msg_t* buf, size_t size) {
 	unsigned int pin = ((unsigned int)handle % 32);
-	unsigned int value = memory_mapped_read(GPIO5_OE);
+	unsigned int addresses[1];
+	addresses[0] = GPIO5_OE;
+	unsigned int value = memory_mapped_read(addresses, 1);
 
+	//TODO: buf-> data check for size
 	buf->data[0] = (value & (1 << pin)) >> pin;
 
 	return 1;
@@ -44,23 +51,29 @@ static int gpio_read(void* handle, driver_msg_t* buf, size_t size) {
 
 static int gpio_write(void* handle, driver_msg_t* buf, size_t size) {
 	unsigned int pin = ((unsigned int)handle % 32);
-	unsigned int value = memory_mapped_read(GPIO5_DATAOUT);
+	unsigned int values[1];
+	unsigned int addresses[1];
+
+	values[0] = GPIO5_DATAOUT;
+	memory_mapped_read(values, 1);
 
 	switch (buf->data[0]) {
 	case GPIO_ON:
-		value |= (1 << pin);
+		values[0] |= (1 << pin);
 		break;
 	case GPIO_OFF:
-		value &= ~(1 << pin);
+		values[0] &= ~(1 << pin);
 		break;
 	case GPIO_TOGGLE:
-		value ^= (1 << pin);
+		values[0] ^= (1 << pin);
 		break;
 	default:
 		return -1;
 	}
 
-	memory_mapped_write(value, GPIO5_DATAOUT);
+	addresses[0] = GPIO5_DATAOUT;
+
+	memory_mapped_write(values, addresses, 1);
 	return 1;
 }
 
