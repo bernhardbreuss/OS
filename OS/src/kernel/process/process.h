@@ -18,7 +18,8 @@
 typedef enum {
 	PROCESS_READY,
 	PROCESS_RUNNING,
-	PROCESS_BLOCKED
+	PROCESS_BLOCKED,
+	PROCESS_ZOMBIE
 } ProcessState_t;
 
 typedef enum {
@@ -43,6 +44,7 @@ typedef struct {
 	mmu_table_t* page_table;
 	ProcessId_t stdin;
 	ProcessId_t stdout;
+	uint8_t in_ready_list;
 } Process_t;
 
 #endif /* PS_H_ */

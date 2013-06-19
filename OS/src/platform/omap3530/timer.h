@@ -8,6 +8,8 @@
 #ifndef OMAP3530_TIMER_PLATFORM_H_
 #define OMAP3530_TIMER_PLATFORM_H_
 
+#define SCHEDULER_TIME_SLICE_DURATION 3000
+
 typedef struct _gptimer_t {
 	int interrupt_line_id;
 	unsigned int* volatile TIDR;

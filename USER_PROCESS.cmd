@@ -15,6 +15,9 @@ MEMORY
 
 stackSize = 0x20000;
 
+ARGS_ADDR = 0x3FFFF000;
+ARGV_ADDR = 0x3FFFF000 + 500;
+
 SECTIONS
 {
    .const      > USER_SPACE
@@ -27,10 +30,4 @@ SECTIONS
    .text       > USER_SPACE
    .sysmem     > USER_SPACE
    .switch     > USER_SPACE
-
-   .arguments  > ARGUMENTS {
-		ARGS_ADDR = .;
-		. += 500; // arguments max length
-   		ARGV_ADDR = .;
-   }
 }

@@ -12,7 +12,7 @@
 
 static message_t msg;
 
-static unsigned int system_start_process(void) {
+static uint8_t system_start_process(void) {
 	Process_t* p = process_manager_start_process_bybinary((binary_t*)msg.value.data[1], PROCESS_PRIORITY_HIGH, &msg.value.buffer[sizeof(unsigned int) * 3]);
 	if (p != NULL) {
 		msg.value.data[1] = p->pid;
@@ -30,68 +30,86 @@ static unsigned int system_start_process(void) {
 		}
 	}
 
-	return SYSTEM_OK;
+	msg.value.data[0] = SYSTEM_OK;
+	return 1;
 }
 
-static unsigned int system_find_process(void) {
+static uint8_t system_find_process(void) {
 	Process_t* p = process_manager_get_process_byname(&msg.value.buffer[sizeof(unsigned int)]);
 	if (p == NULL) {
-		return SYSTEM_ERROR;
+		msg.value.data[0] = SYSTEM_ERROR;
+		return 1;
 	} else {
 		msg.value.data[1] = p->pid;
-		return SYSTEM_OK;
+		msg.value.data[0] = SYSTEM_OK;
+		return 1;
 	}
 }
 
-static unsigned int mem_io_read(message_t *msg){
+static uint8_t system_end_process(void) {
+	process_manager_end_process(msg.source, msg.value.data[1]);
+	return 0;
+}
+
+static uint8_t mem_io_read(void){
 
 	unsigned int* address;
 	unsigned int address_data;
 	int i;
 
-	for( i = 1 ; i < msg->size; i++ ){
-		address = (unsigned int*) msg->value.data[i];
+	for( i = 1 ; i < msg.size; i++ ){
+		address = (unsigned int*) msg.value.data[i];
 		address_data = *address;
-		msg->value.data[i] =  address_data;
+		msg.value.data[i] =  address_data;
 	}
-	return SYSTEM_OK;
 
+	msg.value.data[0] = SYSTEM_OK;
+	return 1;
 }
 
-static unsigned int mem_io_write(message_t *msg){
+static uint8_t mem_io_write(void){
 
 	unsigned int* address;
 	int i;
 
-	for( i = 1 ; i < msg->size; i += 2 ){
-		address = (unsigned int*) msg->value.data[i+1];
-		*address = msg->value.data[i];
+	for( i = 1 ; i < msg.size; i += 2 ){
+		address = (unsigned int*) msg.value.data[i+1];
+		*address = msg.value.data[i];
 	}
 
-	return SYSTEM_OK;
+	msg.value.data[0] = SYSTEM_OK;
+	return 1;
 }
 
 void system_main_loop(void) {
 	while (1) {
-		ipc_syscall(PROCESS_ANY, IPC_RECEIVE, &msg);
+		int ipc = ipc_syscall(PROCESS_ANY, IPC_RECEIVE, &msg);
+		if (ipc == IPC_OK) {
+			uint8_t answer = 0;
 
-		switch (msg.value.data[0]) {
-		case SYSTEM_START_PROCESS:
-			msg.value.data[0] = system_start_process();
-			break;
-		case SYSTEM_FIND_PROCESS:
-			msg.value.data[0] = system_find_process();
-			break;
-		case MEM_IO_READ:
-			msg.value.data[0] = mem_io_read(&msg);
-			break;
-		case MEM_IO_WRITE:
-			msg.value.data[0] = mem_io_write(&msg);
-			break;
-		default:
-			msg.value.data[0] = SYSTEM_ERROR;
+			switch (msg.value.data[0]) {
+			case SYSTEM_START_PROCESS:
+				answer = system_start_process();
+				break;
+			case SYSTEM_FIND_PROCESS:
+				answer = system_find_process();
+				break;
+			case MEM_IO_READ:
+				answer = mem_io_read();
+				break;
+			case MEM_IO_WRITE:
+				answer = mem_io_write();
+				break;
+			case SYSTEM_END_PROCESS:
+				answer = system_end_process();
+			default:
+				answer = 1;
+				msg.value.data[0] = SYSTEM_ERROR;
+			}
+
+			if (answer) {
+				ipc_syscall(msg.source, IPC_SEND, &msg);
+			}
 		}
-
-		ipc_syscall(msg.source, IPC_SEND, &msg);
 	}
 }

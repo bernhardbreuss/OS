@@ -128,8 +128,59 @@ void main(void) {
 
 	binaries[2] = osx_init(&BINARY_led0_user, &mem_elf_read);
 
-//	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(fast) 21 450000");
-//	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(slow) 22 900000");
+//	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(fast) 21 100 100");
+//	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(slow) 22 1000");
+
+	/*
+	// test code for binary_map
+	binary_map_t* map = malloc(sizeof(binary_map_t));
+	if (map == NULL) {
+		logger_debug("failed to allocate memory for binary_map_t*");
+	} else {
+		int status = binary_map_init(map);
+		if (status == ERROR) {
+			logger_debug("failed to initialize binary_map");
+		} else {
+			binary_map_add(map, "driver_manager", binaries[0]);
+			binary_map_add(map, "gpio", binaries[1]);
+			binary_map_add(map, "led0_user", binaries[2]);
+			binary_map_add(map, "uart", binaries[4]);
+
+			binary_t* b1 = binary_map_get_binary(map, "driver_manager");
+			binary_t* b2 = binary_map_get_binary(map, "gpio");
+			binary_t* b3 = binary_map_get_binary(map, "led0_user");
+			binary_t* b4 = binary_map_get_binary(map, "uart");
+			binary_t* b5 = binary_map_get_binary(map, "definately_not_in_map");
+
+			if (b1 == binaries[0]) {
+				logger_debug("SUCCESS: binary mapping successfully found for name 'driver_manager'");
+			} else {
+				logger_error("FAILURE: binary mapping not found for name 'driver_manager'");
+			}
+			if (b2 == binaries[1]) {
+				logger_debug("SUCCESS: binary mapping successfully found for name 'gpio'");
+			} else {
+				logger_error("FAILURE: binary mapping not found for name 'gpio'");
+			}
+			if (b3 == binaries[2]) {
+				logger_debug("SUCCESS: binary mapping successfully found for name 'led0_user'");
+			} else {
+				logger_error("FAILURE: binary mapping not found for name 'led0_user'");
+			}
+			if (b4 == binaries[4]) {
+				logger_debug("SUCCESS: binary mapping successfully found for name 'uart'");
+			} else {
+				logger_error("FAILURE: binary mapping not found for name 'uart'");
+			}
+			if (b5 == NULL) {
+				logger_debug("SUCCESS: binary mapping not found for 'definately_not_in_map'");
+			} else {
+				logger_error("FAILURE: What? 'definately_not_in_map' was found? you're kidding me, right?");
+			}
+
+		}
+	}
+	*/
 
 	dmx_uart_set_send_mode();
 

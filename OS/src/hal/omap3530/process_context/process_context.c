@@ -19,7 +19,7 @@ static void _process_context_init(Process_t* process, uint8_t privileged) {
 		process->saved_context[14] = ((uint8_t*)malloc(MMU_SMALLEST_PAGE_SIZE) + MMU_SMALLEST_PAGE_SIZE); /* R13 = Stack begins 4kB out of the kernel system memory */
 		cpsr |= 0x0000001F; /* set mode to system */
 	} else {
-		process->saved_context[14] = (void*)0x7FFFFFFC; /* R13 = Stack begins at 0x10000000 */
+		process->saved_context[14] = (void*)0x3FFFFFFC; /* R13 = Stack begins at 0x10000000 */
 		cpsr |= 0x00000010; /* set mode to user */
 	}
 	process->saved_context[16] = (void*)cpsr;

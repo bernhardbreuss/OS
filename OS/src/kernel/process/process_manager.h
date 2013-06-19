@@ -33,6 +33,8 @@ uint32_t process_manager_start_managing(ProcessId_t processId);
 Process_t* process_manager_get_process_byname(process_name_t processName);
 Process_t* process_manager_get_process_byid(ProcessId_t id);
 
+void process_manager_end_process(ProcessId_t pid, int exit_code);
+
 void process_manager_set_process_ready(Process_t* process);
 
 void process_manager_block_current_process(void);
