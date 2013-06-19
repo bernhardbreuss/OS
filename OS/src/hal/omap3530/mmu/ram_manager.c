@@ -6,7 +6,6 @@
  */
 
 #include "../../generic/mmu/ram_manager.h"
-#include "ram_manager.h"
 #include "../../../platform/platform.h"
 
 uint32_t ram_manager_align_index(unsigned int alignment, unsigned int* index, uint32_t* bit) {

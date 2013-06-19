@@ -12,8 +12,11 @@
 
 #define SYSTEM_FIND_PROCESS 1
 
+#define SYSTEM_END_PROCESS 2
+
 #define MEM_IO_READ 16
 #define MEM_IO_WRITE 17
+
 
 #define SYSTEM_ERROR 0
 #define SYSTEM_OK 1

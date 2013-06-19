@@ -23,6 +23,7 @@
 #include "binary.h"
 #include "hal/generic/irq/irq.h"
 #include <string.h>
+#include "driver/dmx/dmx.h"
 
 #pragma INTERRUPT(udef_handler, UDEF);
 interrupt void udef_handler() {
@@ -110,28 +111,81 @@ void main(void) {
 	msg.value.data[0] = DRIVER_MANAGER_ADD;
 	msg.value.data[1] = GPIO5;
 	msg.value.data[2] = (unsigned int)(binaries[1]);
-	process_name_t name = "GPIO";
+	char* name = "GPIO";
 	strncpy(&(msg.value.buffer[12]), name, PROCESS_MAX_NAME_LENGTH);
-	ipc_syscall(driver_manager->pid, IPC_SENDREC, &msg); /* TODO: check return value */
+	/* TODO: check return value */
+	ipc_syscall(driver_manager->pid, IPC_SENDREC, &msg);
 
 	/* add drivers to the driver manager */
 	binaries[4] = osx_init(&BINARY_uart, &mem_elf_read);
 	msg.value.data[0] = DRIVER_MANAGER_ADD;
 	msg.value.data[1] = UART2;
 	msg.value.data[2] = (unsigned int)(binaries[4]);
-	name = "UART2";
+	name = "UART 22";
 	memcpy(&(msg.value.buffer[12]), name, PROCESS_MAX_NAME_LENGTH);
-	ipc_syscall(driver_manager->pid, IPC_SENDREC, &msg); /* TODO: check return value */
+	/* TODO: check return value */
+	ipc_syscall(driver_manager->pid, IPC_SENDREC, &msg);
 
 	binaries[2] = osx_init(&BINARY_led0_user, &mem_elf_read);
-	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(fast) 21 450000");
-	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(slow) 22 900000");
 
-//	binaries[3] = osx_init(&BINARY_led1_user, &mem_elf_read);
-//	process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, 1, "LED1 User (slow)");
+//	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(fast) 21 100 100");
+//	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(slow) 22 1000");
 
-//	binaries[5] = osx_init(&BINARY_uart2_user, &mem_elf_read);
-//	process_manager_start_process_bybinary(binaries[5], "UART2 User", PROCESS_PRIORITY_HIGH);
+	/*
+	// test code for binary_map
+	binary_map_t* map = malloc(sizeof(binary_map_t));
+	if (map == NULL) {
+		logger_debug("failed to allocate memory for binary_map_t*");
+	} else {
+		int status = binary_map_init(map);
+		if (status == ERROR) {
+			logger_debug("failed to initialize binary_map");
+		} else {
+			binary_map_add(map, "driver_manager", binaries[0]);
+			binary_map_add(map, "gpio", binaries[1]);
+			binary_map_add(map, "led0_user", binaries[2]);
+			binary_map_add(map, "uart", binaries[4]);
+
+			binary_t* b1 = binary_map_get_binary(map, "driver_manager");
+			binary_t* b2 = binary_map_get_binary(map, "gpio");
+			binary_t* b3 = binary_map_get_binary(map, "led0_user");
+			binary_t* b4 = binary_map_get_binary(map, "uart");
+			binary_t* b5 = binary_map_get_binary(map, "definately_not_in_map");
+
+			if (b1 == binaries[0]) {
+				logger_debug("SUCCESS: binary mapping successfully found for name 'driver_manager'");
+			} else {
+				logger_error("FAILURE: binary mapping not found for name 'driver_manager'");
+			}
+			if (b2 == binaries[1]) {
+				logger_debug("SUCCESS: binary mapping successfully found for name 'gpio'");
+			} else {
+				logger_error("FAILURE: binary mapping not found for name 'gpio'");
+			}
+			if (b3 == binaries[2]) {
+				logger_debug("SUCCESS: binary mapping successfully found for name 'led0_user'");
+			} else {
+				logger_error("FAILURE: binary mapping not found for name 'led0_user'");
+			}
+			if (b4 == binaries[4]) {
+				logger_debug("SUCCESS: binary mapping successfully found for name 'uart'");
+			} else {
+				logger_error("FAILURE: binary mapping not found for name 'uart'");
+			}
+			if (b5 == NULL) {
+				logger_debug("SUCCESS: binary mapping not found for 'definately_not_in_map'");
+			} else {
+				logger_error("FAILURE: What? 'definately_not_in_map' was found? you're kidding me, right?");
+			}
+
+		}
+	}
+	*/
+
+	dmx_uart_set_send_mode();
+
+	binaries[3] = osx_init(&BINARY_uart2_user, &mem_elf_read);
+	process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, "UART2_user_proc");
 
 	logger_debug("System started ...");
 

@@ -73,7 +73,7 @@ static ProcessId_t driver_manager_start_driver(Device_t device) {
 	msg.value.data[2] = (unsigned int)PROCESS_INVALID_ID;
 	strncpy(&msg.value.buffer[sizeof(unsigned int) * 3], mapping->command_line, sizeof(mapping->command_line));
 
-	unsigned int ipc = ipc_syscall(PROCESS_KERNEL, IPC_SENDREC, &msg);
+	unsigned int ipc = ipc_syscall(PROCESS_SYSTEM, IPC_SENDREC, &msg);
 
 	if (ipc != IPC_OK || msg.value.data[0] != SYSTEM_OK) {
 		return PROCESS_INVALID_ID;

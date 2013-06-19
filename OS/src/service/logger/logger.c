@@ -16,12 +16,12 @@
 
 #define FINAL_CHAR '\0'
 
-#define LOG(type, format) { \
+#define LOG(type, format) /*{ \
 		va_list arglist; \
 		va_start(arglist, format); \
 		log(type, format, arglist); \
 		va_end(arglist); \
-	}
+	}*/
 
 inline void log(char* type, char* format, va_list arglist);
 extern uart_t uart3;

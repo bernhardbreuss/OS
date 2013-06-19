@@ -14,6 +14,5 @@
 #include "ram_manager.h"
 #include "timer.h"
 #include "uart.h"
-#include "mmchs.h"
 
 #endif /* OMAP3530_PLATFORM_H_ */

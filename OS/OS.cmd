@@ -15,8 +15,6 @@ MEMORY
    USER_PROCESSES:		ORIGIN = 0x80400000  LENGTH = 0x00A00000 // 10MB user processes which are loaded with the OS binary
    DDR_USER:			ORIGIN = 0x80E00000  LENGTH = 0x03200000 // 50MB RAM for user processes (physical)
 
-   INTERRUPT_VECTORS:	ORIGIN = 0x4020FFC0  LENGTH = 0x00000020
-
    VIRTUAL_PROCESSES:	ORIGIN = 0x00E00000  LENGTH = 0x03200000 // 50MB RAM for user processes (virtual)
    ARGUMENTS:			ORIGIN = 0x3FFFF000  LENGTH = 0x00001000
 }
@@ -26,15 +24,15 @@ pageSize = 0x1000;
 
 SECTIONS
 {
-   .interruptvectors	> INTERRUPT_VECTORS {
-   		interruptvectors = .;
-   		*(.interruptvectors)
-   	}
-
    	.processes load = USER_PROCESSES, run = VIRTUAL_PROCESSES {
    		. = align(pageSize);
    		idle_process.obj { RUN_START(idle_process_virtual), LOAD_START(idle_process_physical), SIZE(idle_process_size) }
    	}
+
+   .interruptvectors load = SRAM ALIGN = 4 {
+   	    interruptvectors = .;
+   	    *(.interruptvectors)
+   }
 
    .const      > DDR
    .bss        > DDR
@@ -45,7 +43,7 @@ SECTIONS
    .cinit      > DDR
    .cio        > DDR
 
-   .text       > SRAM
+   .text       >> SRAM | DDR
    .sysmem     > DDR
    .switch     > DDR
 
