@@ -58,7 +58,7 @@ void turnoff_rgb(void) {
 
 uart_t uart3;
 
-static binary_t* binaries[9];
+static binary_t* binaries[10];
 static char BINARY_led0_user[] = BINARY_led0_user_out;
 static char BINARY_driver_manager[] = BINARY_driver_manager_out;
 static char BINARY_gpio[] = BINARY_gpio_out;
@@ -66,8 +66,10 @@ static char BINARY_uart[] = BINARY_uart_out;
 static char BINARY_uart2_user[] = BINARY_uart2_user_out;
 static char BINARY_dmx[] = BINARY_dmx_out;
 static char BINARY_dmx_user[] = BINARY_dmx_user_out;
+static char BINARY_dmx_control[] = BINARY_dmx_control_out;
 static char BINARY_tty[] = BINARY_tty_out;
 static char BINARY_cpu_info[] = BINARY_cpu_info_out;
+
 
 uint32_t mem_elf_read(void* ident, void* dst, uint32_t offset, size_t length) {
 	if (length == 0) {
@@ -154,8 +156,11 @@ void main(void) {
 	binaries[6] = osx_init(&BINARY_dmx, &mem_elf_read);
 	add_driver(binaries[6], "DMX 5", DMX);
 
-	binaries[7] = osx_init(&BINARY_dmx_user, &mem_elf_read);
-	process_manager_start_process_bybinary(binaries[7], PROCESS_PRIORITY_HIGH, "DMX_User_app 5");
+//	binaries[7] = osx_init(&BINARY_dmx_user, &mem_elf_read);
+//	process_manager_start_process_bybinary(binaries[7], PROCESS_PRIORITY_HIGH, "DMX_User_app 5");
+
+	binaries[8] = osx_init(&BINARY_dmx_control, &mem_elf_read);
+	process_manager_start_process_bybinary(binaries[8], PROCESS_PRIORITY_HIGH, "DMX_Control 5");
 
 	logger_debug("System started ...");
 
