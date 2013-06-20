@@ -259,7 +259,7 @@ void _mmu_handle_abort(unsigned int status, void* virtual_address) {
 		return;
 	} else {
 		mmu_table_t* table;
-		if ((unsigned int)virtual_address < 0x40000000U) {
+		if ((unsigned int)virtual_address < 0x40000000U && process_manager_current_process != &process_manager_kernel_process) {
 			table = process_manager_current_process->page_table;
 		} else {
 			/* TODO: check if SPSR says that the abort wasn't in user mode */

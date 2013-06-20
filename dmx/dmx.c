@@ -12,6 +12,8 @@
 uint8_t channels[20];
 driver_msg_t msg;
 handle_t handle;
+handle_t handle_gpio5_7;
+handle_t handle_gpio5_18;
 
 typedef enum {
 	RED = 2,
@@ -42,8 +44,6 @@ Driver_t driver = {
 };
 
 #define SCM_CONTROL_PADCONF_MMC2_DAT2 	0x48002160
-#define DMX_GPIO5_OE 					0x49056034
-#define DMX_GPIO5_DATAOUT 				0x4905603C
 
 #define SCM_CONTROL_PADCONF_UART2_TX 	0x48002178
 #define SCM_CONTROL_PADCONF_UART2_CTS 	0x48002174
@@ -103,15 +103,8 @@ static void dmx_uart_set_reset_mode(void) {
  * then send mark after break (2 bits high) (4 microseconds)
  */
 static void dmx_send_reset(void) {
-	unsigned int addresses[1] = { DMX_GPIO5_DATAOUT };
-	unsigned int values[1];
-
-	memory_mapped_read(addresses, 1);
-
-	values[0] = addresses[0] & ~BIT18; //send low
-	addresses[0] = DMX_GPIO5_DATAOUT;
-
-	memory_mapped_write(values, addresses, 1);
+	msg.data[0] = 0x2;
+	os_write(&handle_gpio5_18, &msg, 4); //send low
 
 	/* RESET wait some time */
 	int i, a;
@@ -119,8 +112,8 @@ static void dmx_send_reset(void) {
 	for(i = 0; i < a; i++);
 
 
-	values[0] |= BIT18;
-	memory_mapped_write(values, addresses, 1);
+	msg.data[0] = 0x1;
+	os_write(&handle_gpio5_18, &msg, 4); //send high
 
 	/* MARK AFTER RESET */
 	a = 10; //~10 microseconds
@@ -160,26 +153,30 @@ int main(void) {
 
 	os_open(22, &msg, 16, &handle, DRIVER_MODE_WRITE);
 
+	msg.data[0] = 7;
+	os_open(5, &msg, 4, &handle_gpio5_7, DRIVER_MODE_WRITE);
+	msg.data[0] = 18;
+	os_open(5, &msg, 4, &handle_gpio5_18, DRIVER_MODE_WRITE);
+
+	msg.data[0] = 0x1;
+	os_write(&handle_gpio5_7, &msg, 4); 	//set bit 7 to high, to enable "Driver output" on RS485
+
+	msg.data[0] = 0x1;
+	os_write(&handle_gpio5_18, &msg, 4);	//set bit 18 to high
+
 	//Configure RS485 DE (driver output) -----------------------
 	//@see CIRCIUT.pdf
 	//extension board pin 11, set mode for GPIO
 	
-	unsigned int address[3] = { SCM_CONTROL_PADCONF_MMC2_DAT2, DMX_GPIO5_OE, DMX_GPIO5_DATAOUT };
-	unsigned int values[3];
-	memory_mapped_read(address, 3);
+	unsigned int address[1] = { SCM_CONTROL_PADCONF_MMC2_DAT2 };
+	unsigned int values[1];
+	memory_mapped_read(address, 1);
 
-	//mode 4 is GPIO
 	values[0] = address[0] & ~0x70000;
 	values[0] |= (SCM_MODE_4 << 16);
 	address[0] = SCM_CONTROL_PADCONF_MMC2_DAT2;
 
-	values[1] = address[1] & ~(BIT18 | BIT7); /* GPIO 146 and 135 to output */
-	address[1] = DMX_GPIO5_OE;
-
-	values[2] = address[2] | 0x80; 	//set bit 7 to high, to enable "Driver output" on RS485
-	address[2] = DMX_GPIO5_DATAOUT;
-
-	memory_mapped_write(values, address, 3);
+	memory_mapped_write(values, address, 1);
 
 	channels[0] = 0x0;
 	channels[1] = 0x2;

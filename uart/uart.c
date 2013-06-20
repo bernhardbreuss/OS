@@ -84,7 +84,7 @@ int main(int argc, char* argv[]) {
 	if(exit_code != 0) {
 		while(1);
 	} else {
-		driver_init();
+		driver_init(NULL);
 	}
 
 	return exit_code;

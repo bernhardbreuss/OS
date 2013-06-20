@@ -102,6 +102,7 @@ void system_main_loop(void) {
 				break;
 			case SYSTEM_END_PROCESS:
 				answer = system_end_process();
+				break;
 			default:
 				answer = 1;
 				msg.value.data[0] = SYSTEM_ERROR;

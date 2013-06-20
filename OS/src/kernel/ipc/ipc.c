@@ -52,18 +52,22 @@ int8_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 		case IPC_SEND:
 		case IPC_SENDREC: /* SEND is falling through here */
 			_disable_interrupts();
-			/* logger_debug("IPC: SEND src=%i:%s dst=%i:%s", src->pid, src->name, o, (dst != NULL) ? dst->name : "<ANY>"); */
 			if (dst->state == PROCESS_ZOMBIE) {
 				_enable_interrupts();
 				return IPC_DEAD;
 			}
 			if (dst->state == PROCESS_BLOCKED && dst->ipc.call_type == IPC_RECEIVE && (dst->ipc.other == src->pid || dst->ipc.other == PROCESS_ANY)) {
+				logger_debug("IPC: SEND-copying src=%i:%s dst=%i:%s", src->pid, src->name, o, (dst != NULL) ? dst->name : "<ANY>");
+				if (dst->ipc.other == PROCESS_ANY) {
+					dst->ipc.other = src->pid;
+				}
 				_enable_interrupts();
 				/* both process are now BLOCKED */
 				copy_msg(src, dst);
 				dst->ipc.call_type = IPC_NOOP;
 				process_manager_set_process_ready(dst);
 			} else {
+				logger_debug("IPC: SEND-blocked src=%i:%s dst=%i:%s", src->pid, src->name, o, (dst != NULL) ? dst->name : "<ANY>");
 				if (dst->ipc.other == src->pid && dst->ipc.call_type & IPC_SEND) {
 					return IPC_DEADLOCK;
 				}
@@ -87,7 +91,6 @@ int8_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 		case IPC_RECEIVE: /* SENDREC and SEND are falling through here */
 		case IPC_RECEIVE_ASYNC:
 			_disable_interrupts();
-			/* logger_debug("IPC: RECIEVE src=%i:%s dst=%i:%s", src->pid, src->name, o, (dst != NULL) ? dst->name : "<ANY>"); */
 			if (dst != NULL) {
 				if (dst->state == PROCESS_ZOMBIE) {
 					_enable_interrupts();
@@ -105,6 +108,7 @@ int8_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 				} while (dst != NULL && dst->state == PROCESS_ZOMBIE);
 			}
 			if (dst != NULL && dst->state == PROCESS_BLOCKED && (dst->ipc.call_type & IPC_SEND) == IPC_SEND && dst->ipc.other == src->pid) {
+				logger_debug("IPC: RECIEVED-copying src=%i:%s dst=%i:%s", src->pid, src->name, o, (dst != NULL) ? dst->name : "<ANY>");
 				/* both process are now BLOCKED */
 				_enable_interrupts();
 
@@ -139,6 +143,7 @@ int8_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 					_enable_interrupts();
 					return IPC_DEAD;
 				}
+				logger_debug("IPC: RECIEVED-blocked src=%i:%s dst=%i:%s", src->pid, src->name, o, (dst != NULL) ? dst->name : "<ANY>");
 				_enable_interrupts();
 
 				/* msg received */
