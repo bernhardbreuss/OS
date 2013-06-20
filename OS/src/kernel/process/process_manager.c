@@ -170,7 +170,7 @@ void process_manager_change_process(Process_t* process) {
 
 	mmu_activate_process(process);
 
-	logger_debug("Current process: #%u %s", process->pid, process->name);
+	/* logger_debug("Current process: #%u %s", process->pid, process->name); */
 }
 
 Process_t* process_manager_get_process_byname(process_name_t name) {

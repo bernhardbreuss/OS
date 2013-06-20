@@ -86,5 +86,5 @@ Driver_t driver = {
 };
 
 void main(void) {
-	driver_init();
+	driver_init(NULL);
 }

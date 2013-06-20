@@ -44,6 +44,6 @@ typedef struct _Driver_t {
 
 extern Driver_t driver;
 
-void driver_init(void);
+void driver_init(void (*async_loop)(void));
 
 #endif /* DRIVER_H_ */
