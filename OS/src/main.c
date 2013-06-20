@@ -65,6 +65,7 @@ static char BINARY_gpio[] = BINARY_gpio_out;
 static char BINARY_uart[] = BINARY_uart_out;
 static char BINARY_uart2_user[] = BINARY_uart2_user_out;
 static char BINARY_dmx[] = BINARY_dmx_out;
+static char BINARY_tty[] = BINARY_tty_out;
 uint32_t mem_elf_read(void* ident, void* dst, uint32_t offset, size_t length) {
 	if (length == 0) {
 		return 0;
@@ -94,17 +95,17 @@ void add_driver(binary_t* binary, char* command_line, Device_t device) {
 #include <std_adapter.h>
 void main(void) {
 	/* logger_init() */
-	uart_get(3, &uart3);
+	/*uart_get(3, &uart3);
 	uart_protocol_format_t protocol;
 	protocol.baudrate = 0x001A; //115.2Kbps		138;	//9.6 Kbps
 	protocol.stopbit = 0x0;		//1 stop bit
 	protocol.datalen = 0x3;		//length 8
 	protocol.use_parity = 0x0;
 	uart_init(&uart3, 0x00, protocol);
-	irq_add_handler(UART3_INTCPS_MAPPING_ID, &uart3_irq_handler);
+	//irq_add_handler(UART3_INTCPS_MAPPING_ID, &uart3_irq_handler);
 
 	logger_debug("\r\n\r\nSystem initialize ...");
-	logger_logmode();
+	logger_logmode();*/
 
 	ram_manager_init();
 	mmu_table_t* page_table = mmu_init();
@@ -128,8 +129,8 @@ void main(void) {
 	add_driver(binaries[4], "UART 23", UART3);
 
 	binaries[2] = osx_init(&BINARY_led0_user, &mem_elf_read);
-	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(fast) 21 100 100");
-	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(slow) 22 1000");
+	//process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(fast) 21 100 100");
+	//process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(slow) 22 1000");
 
 	/*
 	// test code for binary_map
@@ -187,9 +188,12 @@ void main(void) {
 	//binaries[3] = osx_init(&BINARY_uart2_user, &mem_elf_read);
 	//process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, "UART2_user_proc");
 
-	binaries[3] = osx_init(&BINARY_dmx, &mem_elf_read);
+	//binaries[3] = osx_init(&BINARY_dmx, &mem_elf_read);
 	// TODO: add_driver(binaries[3], "DMX", DMX);
-	process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, "DMX");
+	//process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, "DMX");
+
+	binaries[3] = osx_init(&BINARY_tty, &mem_elf_read);
+	process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, "tty 23");
 
 	logger_debug("System started ...");
 
