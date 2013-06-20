@@ -12,6 +12,7 @@
 		<project>uart2_user</project>
 		<project>dmx</project>
 		<project>tty</project>
+		<project>cpu_info</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

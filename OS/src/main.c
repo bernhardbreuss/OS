@@ -66,6 +66,7 @@ static char BINARY_uart[] = BINARY_uart_out;
 static char BINARY_uart2_user[] = BINARY_uart2_user_out;
 static char BINARY_dmx[] = BINARY_dmx_out;
 static char BINARY_tty[] = BINARY_tty_out;
+static char BINARY_cpu_info[] = BINARY_cpu_info_out;
 uint32_t mem_elf_read(void* ident, void* dst, uint32_t offset, size_t length) {
 	if (length == 0) {
 		return 0;
@@ -194,6 +195,10 @@ void main(void) {
 
 	binaries[3] = osx_init(&BINARY_tty, &mem_elf_read);
 	process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, "tty 23");
+
+	binaries[5] = osx_init(&BINARY_cpu_info, &mem_elf_read);
+	process_manager_start_process_bybinary(binaries[5], PROCESS_PRIORITY_HIGH, "CPU_INFO");
+
 
 	logger_debug("System started ...");
 
