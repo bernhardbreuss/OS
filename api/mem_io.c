@@ -13,22 +13,27 @@
 
 int memory_mapped_read(unsigned int address[], size_t size){
 
-	//TODO: stephan: multiple ipc's at once
-
-	message_t ipc_msg;
-	int i;
-	ipc_msg.value.data[0] = MEM_IO_READ;
-	for(i = 1; i <= size; i++){
-			ipc_msg.value.data[i] = address[i-1];
+	int l = 0;
+	while(size > 0) {
+		message_t ipc_msg;
+		int i;
+		int min = ((MESSAGE_DATA_SIZE-1) < size) ? (MESSAGE_DATA_SIZE-1) : size;
+		ipc_msg.value.data[0] = MEM_IO_READ;
+		for(i = 0; i < min; i++){
+				ipc_msg.value.data[i+1] = address[(MESSAGE_DATA_SIZE * l) + i];
+			}
+		ipc_msg.size = size + 1;
+		ipc_msg.type = MESSAGE_TYPE_DATA;
+		ipc_syscall( 0, IPC_SENDREC, &ipc_msg);
+		if((ipc_msg.size - 1) != min){
+			return -1;
 		}
-	ipc_msg.size = size + 1;
-	ipc_msg.type = MESSAGE_TYPE_DATA;
-	ipc_syscall( 0, IPC_SENDREC, &ipc_msg);
-	if((ipc_msg.size - 1) != size){
-		return -1;
-	}
-	for(i = 0; i < size; i++){
-		address[i] = ipc_msg.value.data[i+1];
+		for(i = 0; i < min; i++){
+			address[(MESSAGE_DATA_SIZE * l) + i] = ipc_msg.value.data[i+1];
+		}
+		size -= min;
+		l++;
+
 	}
 
 	return 0;
