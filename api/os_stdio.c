@@ -99,5 +99,12 @@ int os_write(handle_t* handle, driver_msg_t* buf, size_t size) {
 }
 
 int os_read(handle_t* handle, driver_msg_t* buf, size_t size) {
-	return osstd_send_handle(DRIVER_WRITE, handle, buf, size);
+	if (osstd_send_handle(DRIVER_READ, handle, buf, size) == IPC_OK) {
+		if (msg.value.data[0] > 0) {
+			memcpy(buf, &msg.value.data[3], msg.value.data[0]);
+		}
+		return msg.value.data[0];
+	} else {
+		return -1;
+	}
 }

@@ -24,16 +24,4 @@
 		<nature>org.eclipse.cdt.core.ccnature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
-	<linkedResources>
-		<link>
-			<name>USER_PROCESS.cmd</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/USER_PROCESS.cmd</locationURI>
-		</link>
-		<link>
-			<name>user_boot.asm</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/user_boot.asm</locationURI>
-		</link>
-	</linkedResources>
 </projectDescription>

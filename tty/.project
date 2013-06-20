@@ -1,19 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>OS</name>
+	<name>tty</name>
 	<comment></comment>
 	<projects>
-		<project>util</project>
 		<project>api</project>
-		<project>driver_manager</project>
-		<project>gpio</project>
-		<project>led0_user</project>
-		<project>uart</project>
-		<project>uart2_user</project>
-		<project>dmx</project>
-		<project>dmx_user</project>
-		<project>tty</project>
-		<project>cpu_info</project>
+		<project>util</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
@@ -35,4 +26,16 @@
 		<nature>org.eclipse.cdt.core.ccnature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>USER_PROCESS.cmd</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/USER_PROCESS.cmd</locationURI>
+		</link>
+		<link>
+			<name>user_boot.asm</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/user_boot.asm</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>

@@ -12,18 +12,19 @@
 #include <process.h>
 #include <bit.h>
 #include <mem_io.h>
+#include <interrupts.h>
+#include <ring_buffer.h>
 
 static uart_t uart;
 static uart_protocol_format_t protocol;
 static uart_owner_t owner = {0x0, 0x1};
 
+static ring_buffer_t* buffer = NULL;
+
 static int uart_get(int uart_nr);
 static void uart_init(uart_protocol_format_t protocol);
 static void uart_software_reset();
-static void uart_read_character(char* buffer);
 static void uart_write_character(char* buffer);
-static void uart_write_uint8_t(uint8_t* buffer);
-static int uart_is_empty_read_queue();
 static int uart_is_empty_write_queue();
 
 static void* uart_open(driver_msg_t* buf, size_t size, driver_mode_t mode) {
@@ -36,6 +37,11 @@ static void* uart_open(driver_msg_t* buf, size_t size, driver_mode_t mode) {
 		protocol.datalen = buf->data[2];
 		protocol.use_parity = buf->data[3];
 		uart_init(protocol);
+
+		if ((mode & DRIVER_MODE_READ) == DRIVER_MODE_READ) {
+			buffer = ring_buffer_create(1024, 1);
+			register_interrupt(buffer, 74, (char*)0x49020000, 1); /* TODO: resolve hard coding to uart3 */
+		}
 
 		owner.owned = 0x1;
 		return (void*) owner.owned_id;
@@ -61,7 +67,11 @@ static int uart_write(void* handle, driver_msg_t* buf, size_t size) {
 }
 
 static int uart_read(void* handle, driver_msg_t* buf, size_t size) {
-	return 1;
+	if (buffer == NULL) {
+		return 0;
+	}
+
+	return ring_buffer_get(buffer, buf->buffer, size);
 }
 
 Driver_t driver = {
@@ -81,9 +91,7 @@ int main(int argc, char* argv[]) {
 		exit_code = uart_get(device_number);
 	}
 
-	if(exit_code != 0) {
-		while(1);
-	} else {
+	if(exit_code == 0) {
 		driver_init(NULL);
 	}
 
@@ -146,7 +154,7 @@ static int uart_get(int uart_nr) {
 }
 
 static void uart_init(uart_protocol_format_t protocol) {
-	int old_lcr_reg, old_enhanced_en, old_tcr_tlr, mr;
+	int old_lcr_reg, old_enhanced_en, old_tcr_tlr;
 
 	unsigned int values[4];
 	unsigned int addresses[4];
@@ -169,7 +177,7 @@ static void uart_init(uart_protocol_format_t protocol) {
 	addresses[0] = uart.EFR_REG;
 	addresses[1] = uart.LCR_REG;
 
-	mr = memory_mapped_read(values, 2);
+	memory_mapped_read(values, 2);
 
 	old_enhanced_en = ((values[0] >> 4) & BIT0);
 	values[0] |= BIT4;
@@ -185,7 +193,7 @@ static void uart_init(uart_protocol_format_t protocol) {
 	addresses[1] = uart.FCR_REG;
 	addresses[2] = uart.LCR_REG;
 
-	mr = memory_mapped_read(values, 3);
+	memory_mapped_read(values, 3);
 
 	old_tcr_tlr = ((values[0] >> 6) & BIT0);
 	values[0] |= BIT6;
@@ -202,7 +210,7 @@ static void uart_init(uart_protocol_format_t protocol) {
 	addresses[1] = uart.EFR_REG;
 	addresses[2] = uart.LCR_REG;
 
-	mr = memory_mapped_read(values, 3);
+	memory_mapped_read(values, 3);
 
 	values[0] |= (BIT2 | BIT6 | BIT7);
 	values[1] |= (old_enhanced_en << 4);
@@ -217,7 +225,7 @@ static void uart_init(uart_protocol_format_t protocol) {
 	addresses[0] = uart.MCR_REG;
 	addresses[1] = uart.LCR_REG;
 
-	mr = memory_mapped_read(values, 2);
+	memory_mapped_read(values, 2);
 	values[0] |= (old_tcr_tlr << 6);
 	values[1] = old_lcr_reg;
 
@@ -230,7 +238,7 @@ static void uart_init(uart_protocol_format_t protocol) {
 	addresses[0] = uart.MDR1_REG;
 	addresses[1] = uart.LCR_REG;
 
-	mr = memory_mapped_read(values, 2);
+	memory_mapped_read(values, 2);
 
 	values[0] = (BIT2 | BIT1 | BIT0);
 	values[1] = 0x00BF; 						//mode b
@@ -247,7 +255,7 @@ static void uart_init(uart_protocol_format_t protocol) {
 	addresses[2] = uart.IER_REG;
 	addresses[3] = uart.LCR_REG;
 
-	mr = memory_mapped_read(values, 4);
+	memory_mapped_read(values, 4);
 
 	old_enhanced_en = ((values[0] >> 4) & BIT0);
 	values[0] |= BIT4;
@@ -274,7 +282,7 @@ static void uart_init(uart_protocol_format_t protocol) {
 	addresses[0] = uart.IER_REG;
 	addresses[1] = uart.LCR_REG;
 
-	mr = memory_mapped_read(values, 1);
+	memory_mapped_read(values, 1);
 	values[0] |= BIT0;
 	values[1] = 0x00BF; 					//mode b
 
@@ -286,7 +294,7 @@ static void uart_init(uart_protocol_format_t protocol) {
 	addresses[0] = uart.EFR_REG;
 	addresses[1] = uart.LCR_REG;
 
-	mr = memory_mapped_read(values, 2);
+	memory_mapped_read(values, 2);
 
 	values[0] |= (old_enhanced_en << 4);
 	values[1] &= 0x00111111;
@@ -299,7 +307,7 @@ static void uart_init(uart_protocol_format_t protocol) {
 	addresses[0] = uart.LCR_REG;
 	addresses[1] = uart.MDR1_REG;
 
-	mr = memory_mapped_read(values, 1);
+	memory_mapped_read(values, 1);
 
 	values[0] |= protocol.datalen;
 	values[0] |= (protocol.stopbit << 2);
@@ -338,35 +346,16 @@ static void uart_software_reset() {
 	  for(i = 0; i < 20000; i++);
 	  values[0] = uart.SYSS_REG;
 	  memory_mapped_read(values, 1);
-	  unsigned int test = (values[0] & BIT0);
   } while(!(values[0] & BIT0));
 
 }
 
-static void uart_read_character(char* buffer) {
-//	*buffer = *(uart->RHR_REG);
-}
 static void uart_write_character(char* buffer) {
 	unsigned int value[1];
 	value[0] = *buffer;
 	unsigned int address[1];
 	address[0] = uart.THR_REG;
 	memory_mapped_write(value, address,  1);
-}
-static void uart_write_uint8_t(uint8_t* buffer) {
-	unsigned int value[1];
-	value[0] = (((unsigned int) *buffer) & 0x000F);
-	unsigned int address[1];
-	address[0] = uart.THR_REG;
-	memory_mapped_write(value, address, 1);
-}
-static int uart_is_empty_read_queue() {
-	unsigned int value[1];
-	value[0] = uart.LSR_REG;
-	int ret = memory_mapped_read(value, 1);
-	if((value[0] & BIT0) && ret == 0)
-		return 0;
-	return 1;
 }
 static int uart_is_empty_write_queue(void) {
 	unsigned int value[1];

@@ -14,7 +14,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="out" artifactName="${ProjName}" buildProperties="" cleanCommand="${CG_CLEAN_CMD}" description="" id="com.ti.ccstudio.buildDefinitions.TMS470.Debug.47651808" name="Debug" parent="com.ti.ccstudio.buildDefinitions.TMS470.Debug" postannouncebuildStep="" postbuildStep="" prebuildStep="&quot;../../binary_copy_windows.exe&quot; &quot;../src/binary.h&quot; &quot;../../driver_manager/Debug/driver_manager.out&quot; &quot;../../gpio/Debug/gpio.out&quot; &quot;../../led0_user/Debug/led0_user.out&quot; &quot;../../uart/Debug/uart.out&quot; &quot;../../uart2_user/Debug/uart2_user.out&quot; &quot;../../dmx/Debug/dmx.out&quot; &quot;../../dmx_user/Debug/dmx_user.out&quot;">
+				<configuration artifactExtension="out" artifactName="${ProjName}" buildProperties="" cleanCommand="${CG_CLEAN_CMD}" description="" id="com.ti.ccstudio.buildDefinitions.TMS470.Debug.47651808" name="Debug" parent="com.ti.ccstudio.buildDefinitions.TMS470.Debug" postannouncebuildStep="" postbuildStep="" prebuildStep="&quot;../../binary_copy_windows.exe&quot; &quot;../src/binary.h&quot; &quot;../../driver_manager/Debug/driver_manager.out&quot; &quot;../../gpio/Debug/gpio.out&quot; &quot;../../led0_user/Debug/led0_user.out&quot; &quot;../../uart/Debug/uart.out&quot; &quot;../../uart2_user/Debug/uart2_user.out&quot; &quot;../../dmx/Debug/dmx.out&quot; &quot;../../tty/Debug/tty.out&quot; &quot;../../cpu_info/Debug/cpu_info.out&quot; &quot;../../dmx_user/Debug/dmx_user.out&quot;">
 					<folderInfo id="com.ti.ccstudio.buildDefinitions.TMS470.Debug.47651808." name="/" resourcePath="">
 						<toolChain id="com.ti.ccstudio.buildDefinitions.TMS470_5.0.exe.DebugToolchain.1210296066" name="TI Build Tools" superClass="com.ti.ccstudio.buildDefinitions.TMS470_5.0.exe.DebugToolchain" targetTool="com.ti.ccstudio.buildDefinitions.TMS470_5.0.exe.linkerDebug.2112520936">
 							<option id="com.ti.ccstudio.buildDefinitions.core.OPT_TAGS.843851298" superClass="com.ti.ccstudio.buildDefinitions.core.OPT_TAGS" valueType="stringList">
@@ -90,6 +90,8 @@
 				<externalSettings containerId="uart2_user;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
 				<externalSettings containerId="dmx;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
 				<externalSettings containerId="dmx_user;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
+				<externalSettings containerId="tty;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
+				<externalSettings containerId="cpu_info;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
 			</storageModule>
 		</cconfiguration>
 		<cconfiguration id="com.ti.ccstudio.buildDefinitions.TMS470.Release.1651336457">

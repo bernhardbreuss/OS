@@ -14,6 +14,7 @@ static message_t msg;
 
 static void driver_msg_received(void) {
 	int return_value = MESSAGE_UNKNOWN;
+	ProcessId_t src = msg.source;
 	switch (msg.value.data[0]) {
 	case DRIVER_IOCTL:
 		if (driver.ioctl != NULL) {
@@ -44,7 +45,7 @@ static void driver_msg_received(void) {
 
 	msg.value.data[0] = return_value;
 
-	ipc_syscall(msg.source, IPC_SEND, &msg);
+	ipc_syscall(src, IPC_SEND, &msg);
 }
 
 void driver_init(void (*async_loop)(void)) {

@@ -27,9 +27,6 @@
 //This register is used to set the interrupt agreement bits.
 #define INTCPS_CONTROL					0x48200048
 
-//the number of interrupt line in intcps sub system
-//OMAP35x.pdf - page 1062 (Table 10-4 Interrupt Mapping to the MPU Subsystem)
-#define INTCPS_IRQ_MAX_COUNT			96
 
 //OMAP3530x.pdf page 1063
 #define GPTIMER1_INTCPS_MAPPING_ID 			37

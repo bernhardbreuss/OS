@@ -5,7 +5,7 @@
 #include "../../../service/logger/logger.h"
 #include "../../generic/process_context/process_context.h"
 
-static void (*_irq_handles[INTCPS_IRQ_MAX_COUNT])(void);
+static void (*_irq_handles[INTCPS_IRQ_MAX_COUNT])(int interrupt_line_id);
 
 interrupt void irq_handler() {
 	asm(" SUB R14, R14, #4");	/* LR = R14; R14-4 is the return address of the IRQ (see ARM System Developers Guid.pdf page 337 */
@@ -23,7 +23,7 @@ void irq_init_handles(void) {
 	//initialization with NULL seemingly not necessary for _irq_handles ... all handles are NULL
 }
 
-void irq_add_handler(int interrupt_line_id, void(*irq_handle_func)(void)) {
+void irq_add_handler(int interrupt_line_id, void(*irq_handle_func)(int)) {
 
 	if(_irq_handles[interrupt_line_id] != NULL) {
 		logger_error("IRQ module - already assigned handler to handler: %d", interrupt_line_id);
@@ -47,7 +47,7 @@ void irq_handle_interrupt(void) {
 
 	if(_irq_handles[currently_active_irq] != NULL) {
 		//logger_debug("IRQ module - call interrupt handle: %u", currently_active_irq);
-		_irq_handles[currently_active_irq]();
+		_irq_handles[currently_active_irq](currently_active_irq);
 	}
 	intcps_enable_new_irq_generation();
 }
