@@ -21,6 +21,10 @@ int8_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 	Process_t* src = process_manager_current_process;
 	Process_t* dst = NULL;
 
+	if (src->pid == o) {
+		return IPC_DEADLOCK;
+	}
+
 	if (call_type == IPC_RECEIVE_ASYNC && src->ipc.sender.head == NULL) {
 		return IPC_NOTHING_RECEIVED;
 	}
@@ -44,12 +48,11 @@ int8_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 	src->ipc.other = o;
 	src->ipc.msg = mmu_get_physical_address(src->page_table, msg);
 
-	/* logger_debug("IPC: %u src=%i:%s dst=%i:%s", call_type, src->pid, src->name, o, (dst != NULL) ? dst->name : "<ANY>"); */
-
 	switch (call_type) {
 		case IPC_SEND:
 		case IPC_SENDREC: /* SEND is falling through here */
 			_disable_interrupts();
+			/* logger_debug("IPC: SEND src=%i:%s dst=%i:%s", src->pid, src->name, o, (dst != NULL) ? dst->name : "<ANY>"); */
 			if (dst->state == PROCESS_ZOMBIE) {
 				_enable_interrupts();
 				return IPC_DEAD;
@@ -61,7 +64,7 @@ int8_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 				dst->ipc.call_type = IPC_NOOP;
 				process_manager_set_process_ready(dst);
 			} else {
-				if (dst->ipc.call_type & IPC_SEND) {
+				if (dst->ipc.other == src->pid && dst->ipc.call_type & IPC_SEND) {
 					return IPC_DEADLOCK;
 				}
 
@@ -83,7 +86,8 @@ int8_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 
 		case IPC_RECEIVE: /* SENDREC and SEND are falling through here */
 		case IPC_RECEIVE_ASYNC:
-			_disable_interrupts(); /* TODO: check that process is not dead */
+			_disable_interrupts();
+			/* logger_debug("IPC: RECIEVE src=%i:%s dst=%i:%s", src->pid, src->name, o, (dst != NULL) ? dst->name : "<ANY>"); */
 			if (dst != NULL) {
 				if (dst->state == PROCESS_ZOMBIE) {
 					_enable_interrupts();
@@ -122,7 +126,7 @@ int8_t ipc_handle_syscall(ProcessId_t o, uint8_t call_type, message_t* msg) {
 				dst->ipc.call_type = IPC_NOOP;
 				process_manager_set_process_ready(dst);
 			} else {
-				if (dst != NULL && dst->ipc.call_type == IPC_RECEIVE) {
+				if (dst != NULL && dst->ipc.other == src->pid && dst->ipc.call_type == IPC_RECEIVE) {
 					return IPC_DEADLOCK;
 				}
 
