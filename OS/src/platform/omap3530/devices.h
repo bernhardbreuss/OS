@@ -22,4 +22,6 @@
 #define UART2 	22
 #define UART3 	23
 
+#define DMX		31
+
 #endif /* PLATFORM_OMAP3530_DEVICES_H_ */

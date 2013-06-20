@@ -94,6 +94,8 @@ static ProcessId_t driver_manager_get_process(Device_t device) {
 		if (mapping->device == device) {
 			return mapping->process_id;
 		}
+
+		node = node->next;
 	}
 
 	return driver_manager_start_driver(device);

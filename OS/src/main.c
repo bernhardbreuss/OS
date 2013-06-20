@@ -58,12 +58,13 @@ void turnoff_rgb(void) {
 
 uart_t uart3;
 
-static binary_t* binaries[5];
+static binary_t* binaries[6];
 static char BINARY_led0_user[] = BINARY_led0_user_out;
 static char BINARY_driver_manager[] = BINARY_driver_manager_out;
 static char BINARY_gpio[] = BINARY_gpio_out;
 static char BINARY_uart[] = BINARY_uart_out;
 static char BINARY_uart2_user[] = BINARY_uart2_user_out;
+static char BINARY_dmx[] = BINARY_dmx_out;
 uint32_t mem_elf_read(void* ident, void* dst, uint32_t offset, size_t length) {
 	if (length == 0) {
 		return 0;
@@ -77,6 +78,17 @@ void uart3_irq_handler(void);
 void uart3_irq_handler(void) {
 	char received_char = *((char*) 0x49020000);
 	logger_debug("UART3 - Received a character: %c", received_char);
+}
+
+Process_t* driver_manager;
+void add_driver(binary_t* binary, char* command_line, Device_t device) {
+	message_t msg;
+	msg.value.data[0] = DRIVER_MANAGER_ADD;
+	msg.value.data[1] = device;
+	msg.value.data[2] = (unsigned int)binary;
+	strncpy(&(msg.value.buffer[12]), command_line, PROCESS_MAX_NAME_LENGTH);
+	/* TODO: check return value */
+	ipc_syscall(driver_manager->pid, IPC_SENDREC, &msg);
 }
 
 #include <std_adapter.h>
@@ -103,33 +115,21 @@ void main(void) {
 	process_manager_init(page_table);
 
 	binaries[0] = osx_init(&BINARY_driver_manager, &mem_elf_read);
-	Process_t* driver_manager = process_manager_start_process_bybinary(binaries[0], PROCESS_PRIORITY_HIGH, PROCESS_DRIVER_MANAGER_NAME);
+	driver_manager = process_manager_start_process_bybinary(binaries[0], PROCESS_PRIORITY_HIGH, PROCESS_DRIVER_MANAGER_NAME);
 
 	/* add drivers to the driver manager */
 	binaries[1] = osx_init(&BINARY_gpio, &mem_elf_read);
-	message_t msg;
-	msg.value.data[0] = DRIVER_MANAGER_ADD;
-	msg.value.data[1] = GPIO5;
-	msg.value.data[2] = (unsigned int)(binaries[1]);
-	char* name = "GPIO";
-	strncpy(&(msg.value.buffer[12]), name, PROCESS_MAX_NAME_LENGTH);
-	/* TODO: check return value */
-	ipc_syscall(driver_manager->pid, IPC_SENDREC, &msg);
+	add_driver(binaries[1], "GPIO", GPIO5);
 
 	/* add drivers to the driver manager */
 	binaries[4] = osx_init(&BINARY_uart, &mem_elf_read);
-	msg.value.data[0] = DRIVER_MANAGER_ADD;
-	msg.value.data[1] = UART2;
-	msg.value.data[2] = (unsigned int)(binaries[4]);
-	name = "UART 22";
-	memcpy(&(msg.value.buffer[12]), name, PROCESS_MAX_NAME_LENGTH);
-	/* TODO: check return value */
-	ipc_syscall(driver_manager->pid, IPC_SENDREC, &msg);
+	add_driver(binaries[4], "UART 21", UART1);
+	add_driver(binaries[4], "UART 22", UART2);
+	add_driver(binaries[4], "UART 23", UART3);
 
 	binaries[2] = osx_init(&BINARY_led0_user, &mem_elf_read);
-
-//	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(fast) 21 100 100");
-//	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(slow) 22 1000");
+	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(fast) 21 100 100");
+	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(slow) 22 1000");
 
 	/*
 	// test code for binary_map
@@ -184,8 +184,12 @@ void main(void) {
 
 	dmx_uart_set_send_mode();
 
-	binaries[3] = osx_init(&BINARY_uart2_user, &mem_elf_read);
-	process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, "UART2_user_proc");
+	//binaries[3] = osx_init(&BINARY_uart2_user, &mem_elf_read);
+	//process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, "UART2_user_proc");
+
+	binaries[3] = osx_init(&BINARY_dmx, &mem_elf_read);
+	// TODO: add_driver(binaries[3], "DMX", DMX);
+	process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, "DMX");
 
 	logger_debug("System started ...");
 

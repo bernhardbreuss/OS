@@ -59,8 +59,11 @@ static int std_adapter_rename(const char* old_name, const char* new_name) {
 }
 
 void std_adapter_adapt(void) {
+	/* http://processors.wiki.ti.com/index.php/Tips_for_using_printf#Using_printf.28.29_to_output_to_a_user-defined_device */
 	add_device("std_adapter", _SSA, std_adapter_open, std_adapter_close, std_adapter_read, std_adapter_write, std_adapter_lseek, std_adapter_unlink, std_adapter_rename);
+	fopen("std_adapter", "w");
 	freopen("std_adapter:", "w", stdout); /* redirect stdout */
+	fopen("std_adapter", "r");
 	freopen("std_adapter:", "r", stdin); /* redirect stdin */
 	setvbuf(stdout, NULL, _IONBF, 0); /* turn off buffering for stdout */
 	setvbuf(stdin, NULL, _IONBF, 0); /* turn off buffering for stdin */
