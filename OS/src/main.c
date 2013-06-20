@@ -58,13 +58,14 @@ void turnoff_rgb(void) {
 
 uart_t uart3;
 
-static binary_t* binaries[6];
+static binary_t* binaries[7];
 static char BINARY_led0_user[] = BINARY_led0_user_out;
 static char BINARY_driver_manager[] = BINARY_driver_manager_out;
 static char BINARY_gpio[] = BINARY_gpio_out;
 static char BINARY_uart[] = BINARY_uart_out;
 static char BINARY_uart2_user[] = BINARY_uart2_user_out;
 static char BINARY_dmx[] = BINARY_dmx_out;
+static char BINARY_dmx_user[] = BINARY_dmx_user_out;
 uint32_t mem_elf_read(void* ident, void* dst, uint32_t offset, size_t length) {
 	if (length == 0) {
 		return 0;
@@ -119,77 +120,24 @@ void main(void) {
 
 	/* add drivers to the driver manager */
 	binaries[1] = osx_init(&BINARY_gpio, &mem_elf_read);
-	add_driver(binaries[1], "GPIO", GPIO5);
+//	add_driver(binaries[1], "GPIO", GPIO5);
 
 	/* add drivers to the driver manager */
 	binaries[4] = osx_init(&BINARY_uart, &mem_elf_read);
-	add_driver(binaries[4], "UART 21", UART1);
+//	add_driver(binaries[4], "UART 21", UART1);
 	add_driver(binaries[4], "UART 22", UART2);
-	add_driver(binaries[4], "UART 23", UART3);
+//	add_driver(binaries[4], "UART 23", UART3);
 
 	binaries[2] = osx_init(&BINARY_led0_user, &mem_elf_read);
-	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(fast) 21 100 100");
-	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(slow) 22 1000");
-
-	/*
-	// test code for binary_map
-	binary_map_t* map = malloc(sizeof(binary_map_t));
-	if (map == NULL) {
-		logger_debug("failed to allocate memory for binary_map_t*");
-	} else {
-		int status = binary_map_init(map);
-		if (status == ERROR) {
-			logger_debug("failed to initialize binary_map");
-		} else {
-			binary_map_add(map, "driver_manager", binaries[0]);
-			binary_map_add(map, "gpio", binaries[1]);
-			binary_map_add(map, "led0_user", binaries[2]);
-			binary_map_add(map, "uart", binaries[4]);
-
-			binary_t* b1 = binary_map_get_binary(map, "driver_manager");
-			binary_t* b2 = binary_map_get_binary(map, "gpio");
-			binary_t* b3 = binary_map_get_binary(map, "led0_user");
-			binary_t* b4 = binary_map_get_binary(map, "uart");
-			binary_t* b5 = binary_map_get_binary(map, "definately_not_in_map");
-
-			if (b1 == binaries[0]) {
-				logger_debug("SUCCESS: binary mapping successfully found for name 'driver_manager'");
-			} else {
-				logger_error("FAILURE: binary mapping not found for name 'driver_manager'");
-			}
-			if (b2 == binaries[1]) {
-				logger_debug("SUCCESS: binary mapping successfully found for name 'gpio'");
-			} else {
-				logger_error("FAILURE: binary mapping not found for name 'gpio'");
-			}
-			if (b3 == binaries[2]) {
-				logger_debug("SUCCESS: binary mapping successfully found for name 'led0_user'");
-			} else {
-				logger_error("FAILURE: binary mapping not found for name 'led0_user'");
-			}
-			if (b4 == binaries[4]) {
-				logger_debug("SUCCESS: binary mapping successfully found for name 'uart'");
-			} else {
-				logger_error("FAILURE: binary mapping not found for name 'uart'");
-			}
-			if (b5 == NULL) {
-				logger_debug("SUCCESS: binary mapping not found for 'definately_not_in_map'");
-			} else {
-				logger_error("FAILURE: What? 'definately_not_in_map' was found? you're kidding me, right?");
-			}
-
-		}
-	}
-	*/
-
-	dmx_uart_set_send_mode();
-
-	//binaries[3] = osx_init(&BINARY_uart2_user, &mem_elf_read);
-	//process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, "UART2_user_proc");
+//	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(fast) 21 100 100");
+//	process_manager_start_process_bybinary(binaries[2], PROCESS_PRIORITY_HIGH, "LED(slow) 22 1000");
 
 	binaries[3] = osx_init(&BINARY_dmx, &mem_elf_read);
-	// TODO: add_driver(binaries[3], "DMX", DMX);
-	process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, "DMX");
+	add_driver(binaries[3], "DMX 5", DMX);
+
+	binaries[5] = osx_init(&BINARY_dmx_user, &mem_elf_read);
+	process_manager_start_process_bybinary(binaries[5], PROCESS_PRIORITY_HIGH, "DMX_User_app 5");
+//	process_manager_start_process_bybinary(binaries[3], PROCESS_PRIORITY_HIGH, "DMX");
 
 	logger_debug("System started ...");
 
