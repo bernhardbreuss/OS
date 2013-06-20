@@ -7,6 +7,40 @@
 
 #include "argument_helper.h"
 
+/**
+ * check special characters
+ */
+static int terminal_parser_ignore(char argv[], int runner, int current, int is_arg, int *is_quote) {
+
+	//check \"
+	if (argv[runner-1] == '\\' && argv[runner] == '"') {
+			return 0;
+	}
+
+	//check "....", if yes open quote else close quote
+	int i = runner;
+	i++;
+	if (argv[runner] == '"') {
+		if (*is_quote == 0) {
+			for (; i != 512; i++) {
+				if (argv[i] == '"') {
+					*is_quote = 1;
+					break;
+				}
+			}
+
+		} else {
+			*is_quote = 0;
+		}
+	}
+
+	if ((is_arg == 0 && argv[runner] == ' ') || argv[runner] == '"') {
+		return 1;
+	}
+	return 0;
+
+}
+
 int argument_helper_parse(void) {
 	char* argv = (char*)&ARGS_ADDR;
 	char** argc_pointers = (char**)&ARGV_ADDR;
@@ -14,11 +48,12 @@ int argument_helper_parse(void) {
 	int current = 0;
 	int runner = 0;
 	int is_arg = 0;
+	int is_quote = 0; //'"'
 
 	for (; current < ARGUMENTS_MAX_LENGTH; current++) {
 
-		//ignore spaces, '"'
-		while((is_arg == 0 && argv[runner] == ' ') || argv[runner] == '"'){
+		//ignore
+		while (terminal_parser_ignore(argv, runner, current, is_arg, &is_quote)) {
 			runner++;
 		}
 
@@ -37,13 +72,18 @@ int argument_helper_parse(void) {
 		}
 
 		//close arg
-		else if (argv[runner] == ' ' && is_arg == 1) {
+		else if (argv[runner] == ' ' && is_arg == 1 && is_quote == 0) {
 			argv[current] = '\0';
 			is_arg = 0;
 		}
 
 		//continue arg
 		else if (argv[runner] != ' ' && is_arg == 1) {
+			argv[current] = argv[runner];
+		}
+
+		//continue arg with quote
+		else if (argv[runner] == ' ' && is_quote == 1) {
 			argv[current] = argv[runner];
 		}
 
